@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	  xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+	<id>dkmunicipalorganisation</id>
+	<name>DK Municipal Organisation and Access Control</name>
+	<summary>Danish Municipal Organisation and Access Control Integration</summary>
+	<description>Integration to the Danish Inter-municipal infrastructure for organisation and access control</description>
+	<version>0.1.03</version>
+	<licence>agpl</licence>
+	<author mail="dev@lamotech.dk" homepage="https://lamotech.dk">Lamotech Solutions ApS</author>
+	<namespace>DKMunicipalOrganisation</namespace>
+	<category>organisation</category>
+	<category>security</category>
+	<bugs>https://lamotech.dk</bugs>
+	<dependencies>
+		<nextcloud min-version="30" max-version="32"/>
+	</dependencies>
+	<navigations>
+		<navigation>
+			<id>dkmunicipalorganisation</id>
+			<name>DK Municipal Organisation and Access Control</name>
+			<route>dkmunicipalorganisation.page.index</route>
+			<icon>app.svg</icon>
+			<type>link</type>
+		</navigation>
+	</navigations>
+
+	<commands>
+		<command>OCA\DKMunicipalOrganisation\Command\SyncOrganisationsCommand</command>
+		<command>OCA\DKMunicipalOrganisation\Command\CreateFolderCommand</command>
+		<command>OCA\DKMunicipalOrganisation\Command\RenameFolderCommand</command>
+		<command>OCA\DKMunicipalOrganisation\Command\SetFolderPermissionsCommand</command>
+		<command>OCA\DKMunicipalOrganisation\Command\ShowSyncLogCommand</command>
+		<command>OCA\DKMunicipalOrganisation\Command\ValidateOrganisationsCommand</command>
+	</commands>
+	<!--
+	<backgroundjobs>
+		<backgroundjob>OCA\DKMunicipalOrganisation\BackgroundJob\SyncOrganisationsJob</backgroundjob>
+	</backgroundjobs>
+	-->
+</info>
