@@ -5,7 +5,7 @@
 	<name>DK Municipal Organisation and Access Control</name>
 	<summary>Danish Municipal Organisation and Access Control Integration</summary>
 	<description>Integration to the Danish Inter-municipal infrastructure for organisation and access control</description>
-	<version>0.1.03</version>
+	<version>0.1.04</version>
 	<licence>agpl</licence>
 	<author mail="dev@lamotech.dk" homepage="https://lamotech.dk">Lamotech Solutions ApS</author>
 	<namespace>DKMunicipalOrganisation</namespace>
@@ -14,6 +14,7 @@
 	<bugs>https://lamotech.dk</bugs>
 	<dependencies>
 		<nextcloud min-version="30" max-version="32"/>
+		<library name="soap" min-version="8.1" max-version="8.2"/>
 	</dependencies>
 	<navigations>
 		<navigation>
@@ -32,6 +33,9 @@
 		<command>OCA\DKMunicipalOrganisation\Command\SetFolderPermissionsCommand</command>
 		<command>OCA\DKMunicipalOrganisation\Command\ShowSyncLogCommand</command>
 		<command>OCA\DKMunicipalOrganisation\Command\ValidateOrganisationsCommand</command>
+		<command>OCA\DKMunicipalOrganisation\Command\GenerateSAMLMetadataCommand</command>
+		<command>OCA\DKMunicipalOrganisation\Command\IssueTokenCommand</command>
+		<command>OCA\DKMunicipalOrganisation\Command\FetchOrganisationsCommand</command>
 	</commands>
 	<!--
 	<backgroundjobs>
