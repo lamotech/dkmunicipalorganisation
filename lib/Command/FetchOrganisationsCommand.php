@@ -31,7 +31,7 @@ class FetchOrganisationsCommand extends Command {
 			$samlToken = TokenIssuerREST::issueToken(
 				entityId: "http://stoettesystemerne.dk/service/organisation/3",
 				clientCertificatePath: $certificatesPath . 'Serviceplatformen.p12',
-				clientCertificatePassword: '5FLWd-_YpL3Z',
+				clientCertificatePassword: '********',
 				cvr: "11111111",
 				tokenIssuerBaseUrl: "https://n2adgangsstyring.eksterntest-stoettesystemerne.dk/"
 			);
@@ -46,7 +46,7 @@ class FetchOrganisationsCommand extends Command {
             $organisationConfiguration = new OrganisationConfiguration();
             $organisationConfiguration->setEndpoint("https://organisation.eksterntest-stoettesystemerne.dk/organisation/organisationsystem/6/");
             $organisationConfiguration->setClientCertificatePath($certificatesPath . 'Serviceplatformen.p12');
-            $organisationConfiguration->setClientCertificatePassword('5FLWd-_YpL3Z');
+            $organisationConfiguration->setClientCertificatePassword('********');
             $organisationConfiguration->setOrganisationServiceCertificatePath($certificatesPath . 'current_ORG_EXTTEST_Organisation_1.cer');
 
             $organisationWrapper = new OrganisationWrapper($organisationConfiguration, $samlToken);

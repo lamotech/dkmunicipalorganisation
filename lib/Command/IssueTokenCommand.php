@@ -24,20 +24,10 @@ class IssueTokenCommand extends Command {
 
 		try {
 			$certificatesPath = '/var/www/html/apps-extra/dkmunicipalorganisation/certificates/';
-			/*
-			$token = TokenIssuer::issueToken(
-				entityId: "http://stoettesystemerne.dk/service/organisation/3",
-				clientCertificatePath: $certificatesPath . 'Serviceplatformen.p12',
-				clientCertificatePassword: '5FLWd-_YpL3Z',
-				cvr: "11111111",
-				tokenIssuerBaseUrl: "https://n2adgangsstyring.eksterntest-stoettesystemerne.dk/",
-				serverCertificatePath: $certificatesPath . 'new_ADG_EXTTEST_Adgangsstyring_2.cer'
-			);
-			*/
 			$samlToken = TokenIssuerREST::issueToken(
 				entityId: "http://stoettesystemerne.dk/service/organisation/3",
 				clientCertificatePath: $certificatesPath . 'Serviceplatformen.p12',
-				clientCertificatePassword: '5FLWd-_YpL3Z',
+				clientCertificatePassword: '********',
 				cvr: "11111111",
 				tokenIssuerBaseUrl: "https://n2adgangsstyring.eksterntest-stoettesystemerne.dk/"
 			);
