@@ -68,3 +68,9 @@ Desktop.ini
 
 # Vite
 .vite/
+
+# Certificates
+certificates/
+.p12
+.cer
+.pfx
