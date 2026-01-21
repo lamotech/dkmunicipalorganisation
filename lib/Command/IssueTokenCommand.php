@@ -16,10 +16,12 @@ class IssueTokenCommand extends Command {
 	protected function configure(): void {
 		$this
 			->setName('dkmunicipalorganisation:issue-token')
-			->setDescription('Issue a SAML2 token from STS using WS-Trust 1.3');
+			->setDescription('Issue a SAML2 token from STS using WS-Trust 1.3')
+            ->addArgument('certificate_password', InputArgument::REQUIRED, 'Password for the certificate');
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output): int {
+		$certificatePassword = (string)$input->getArgument('certificate_password');
 		$output->writeln('<info>Issuing SAML token…</info>');
 
 		try {
@@ -27,7 +29,7 @@ class IssueTokenCommand extends Command {
 			$samlToken = TokenIssuerREST::issueToken(
 				entityId: "http://stoettesystemerne.dk/service/organisation/3",
 				clientCertificatePath: $certificatesPath . 'Serviceplatformen.p12',
-				clientCertificatePassword: '********',
+				clientCertificatePassword: $certificatePassword,
 				cvr: "11111111",
 				tokenIssuerBaseUrl: "https://n2adgangsstyring.eksterntest-stoettesystemerne.dk/"
 			);

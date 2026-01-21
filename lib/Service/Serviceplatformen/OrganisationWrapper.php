@@ -321,10 +321,12 @@ XML;
             CURLOPT_SSLKEYTYPE => 'PEM',
         ]);
 
+        /*
         $serviceCertPath = $this->configuration->getOrganisationServiceCertificatePath();
         if (!empty($serviceCertPath) && file_exists($serviceCertPath)) {
             curl_setopt($ch, CURLOPT_CAINFO, $serviceCertPath);
         }
+        */
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

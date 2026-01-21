@@ -20,10 +20,12 @@ class FetchOrganisationsCommand extends Command {
 	protected function configure(): void {
 		$this
 			->setName('dkmunicipalorganisation:fetch-orgs')
-			->setDescription('Fetch organisations from the organisation service');
+			->setDescription('Fetch organisations from the organisation service')
+            ->addArgument('certificate_password', InputArgument::REQUIRED, 'Password for the certificate');
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output): int {
+		$certificatePassword = (string)$input->getArgument('certificate_password');
 		$output->writeln('<info>Issuing SAML token…</info>');
 
 		try {
@@ -31,23 +33,19 @@ class FetchOrganisationsCommand extends Command {
 			$samlToken = TokenIssuerREST::issueToken(
 				entityId: "http://stoettesystemerne.dk/service/organisation/3",
 				clientCertificatePath: $certificatesPath . 'Serviceplatformen.p12',
-				clientCertificatePassword: '********',
+				clientCertificatePassword: $certificatePassword,
 				cvr: "11111111",
 				tokenIssuerBaseUrl: "https://n2adgangsstyring.eksterntest-stoettesystemerne.dk/"
 			);
 			$output->writeln('<info>Token issued successfully:</info>');
-			$output->writeln(json_encode($samlToken->getMetadata(), JSON_PRETTY_PRINT));
-			$output->writeln('<info>Token assertion:</info>');
-			$output->writeln($samlToken->getAssertion());
-
 
             $output->writeln('<info>Fetching organisations…</info>');
 
             $organisationConfiguration = new OrganisationConfiguration();
             $organisationConfiguration->setEndpoint("https://organisation.eksterntest-stoettesystemerne.dk/organisation/organisationsystem/6/");
             $organisationConfiguration->setClientCertificatePath($certificatesPath . 'Serviceplatformen.p12');
-            $organisationConfiguration->setClientCertificatePassword('********');
-            $organisationConfiguration->setOrganisationServiceCertificatePath($certificatesPath . 'current_ORG_EXTTEST_Organisation_1.cer');
+            $organisationConfiguration->setClientCertificatePassword($certificatePassword);
+            //$organisationConfiguration->setOrganisationServiceCertificatePath($certificatesPath . 'current_ORG_EXTTEST_Organisation_1.cer');
 
             $organisationWrapper = new OrganisationWrapper($organisationConfiguration, $samlToken);
             $response = $organisationWrapper->fremsoeg(limit: 5, offset: 0);
