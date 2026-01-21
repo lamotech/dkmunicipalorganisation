@@ -71,6 +71,6 @@ Desktop.ini
 
 # Certificates
 certificates/
-.p12
-.cer
-.pfx
+*.p12
+*.cer
+*.pfx
