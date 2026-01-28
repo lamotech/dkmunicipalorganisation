@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\DKMunicipalOrganisation\Controller;
+namespace OCA\DkMunicipalOrganisation\Controller;
 
-use OCA\DKMunicipalOrganisation\AppInfo\Application;
+use OCA\DkMunicipalOrganisation\AppInfo\Application;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\FrontpageRoute;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

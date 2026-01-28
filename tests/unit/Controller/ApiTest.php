@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Controller;
 
-use OCA\DKMunicipalOrganisation\AppInfo\Application;
-use OCA\DKMunicipalOrganisation\Controller\ApiController;
+use OCA\DkMunicipalOrganisation\AppInfo\Application;
+use OCA\DkMunicipalOrganisation\Controller\ApiController;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 

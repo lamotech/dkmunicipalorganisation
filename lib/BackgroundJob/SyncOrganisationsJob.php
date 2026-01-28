@@ -1,10 +1,10 @@
 <?php
 
-namespace OCA\DKMunicipalOrganisation\BackgroundJob;
+namespace OCA\DkMunicipalOrganisation\BackgroundJob;
 
 use OCP\BackgroundJob\TimedJob;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCA\DKMunicipalOrganisation\Service\OrganisationSyncService;
+use OCA\DkMunicipalOrganisation\Service\OrganisationSyncService;
 use Psr\Log\LoggerInterface;
 
 class SyncOrganisationsJob extends TimedJob {

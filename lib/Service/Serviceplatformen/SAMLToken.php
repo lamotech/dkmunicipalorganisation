@@ -1,6 +1,6 @@
 <?php
 
-namespace OCA\DKMunicipalOrganisation\Service\Serviceplatformen;
+namespace OCA\DkMunicipalOrganisation\Service\Serviceplatformen;
 
 use Exception;
 

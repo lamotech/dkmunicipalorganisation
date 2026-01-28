@@ -1,7 +1,7 @@
 <?php
 
-namespace OCA\DKMunicipalOrganisation\Service\Serviceplatformen;
-
+namespace OCA\DkMunicipalOrganisation\Service\Serviceplatformen;
+use OCA\DkMunicipalOrganisation\Service\Certificate;
 use Exception;
 use DOMDocument;
 use DOMXPath;
@@ -38,9 +38,7 @@ class OrganisationWrapper
         $transactionUUID = $this->generateUUID();
         $messageId = 'urn:uuid:' . $this->generateUUID();
 
-        $clientCertPath = $this->configuration->getClientCertificatePath();
-        $clientCertPassword = $this->configuration->getClientCertificatePassword();
-        $pemFiles = $this->convertP12ToPem($clientCertPath, $clientCertPassword);
+        $pemFiles = self::storeTempPemFiles($this->configuration->getClientCertificate());
 
         try {
             $soapEnvelope = $this->buildSignedSoapEnvelope($transactionUUID, $messageId, $limit, $offset, $pemFiles);
@@ -346,28 +344,32 @@ XML;
         return $response;
     }
 
-    private function convertP12ToPem(string $p12Path, string $password): array
+    /**
+     * Convert PKCS#12 certificate to PEM format
+     */
+    private static function storeTempPemFiles(Certificate $certificate): array
     {
-        if (!file_exists($p12Path)) {
-            throw new Exception("Certificate file not found: {$p12Path}");
-        }
-
-        $p12Content = file_get_contents($p12Path);
-        $certData = [];
-
-        if (!openssl_pkcs12_read($p12Content, $certData, $password)) {
-            throw new Exception("Failed to read PKCS#12 certificate: " . openssl_error_string());
-        }
-
+        // Create separate files for certificate and private key
         $uniqueId = uniqid();
         $certPath = sys_get_temp_dir() . '/org_client_cert_' . $uniqueId . '.pem';
         $keyPath = sys_get_temp_dir() . '/org_client_key_' . $uniqueId . '.pem';
 
-        file_put_contents($certPath, $certData['cert']);
-        file_put_contents($keyPath, $certData['pkey']);
+        // Write certificate file
+        if (file_put_contents($certPath, $certificate->getPublicKey()) === false) {
+            throw new Exception("Failed to write certificate file");
+        }
 
-        return ['cert' => $certPath, 'key' => $keyPath];
+        // Write private key file
+        if (file_put_contents($keyPath, $certificate->getPrivateKey()) === false) {
+            throw new Exception("Failed to write private key file");
+        }
+
+        return [
+            'cert' => $certPath,
+            'key' => $keyPath
+        ];
     }
+
 
     private function cleanupPemFiles(array $pemFiles): void
     {

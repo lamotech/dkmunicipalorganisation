@@ -1,51 +1,56 @@
 <?php
 declare(strict_types=1);
 
-namespace OCA\DKMunicipalOrganisation\Command;
+namespace OCA\DkMunicipalOrganisation\Command;
 
-use OCA\DKMunicipalOrganisation\Service\Serviceplatformen\TokenIssuer;
-use OCA\DKMunicipalOrganisation\Service\Serviceplatformen\TokenIssuerREST;
-use OCA\DKMunicipalOrganisation\Service\Serviceplatformen\SAMLToken;
+use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\TokenIssuerREST;
+use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\SAMLToken;
+use OCA\DkMunicipalOrganisation\Db\CertificateRepository;
+use OCA\DkMunicipalOrganisation\Service\Certificate;
+use OCA\DkMunicipalOrganisation\Service\Configuration;
+use OCA\DkMunicipalOrganisation\Enum\CertificateType;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use OCA\DKMunicipalOrganisation\Service\Serviceplatformen\OrganisationConfiguration;
-use OCA\DKMunicipalOrganisation\Service\Serviceplatformen\OrganisationWrapper;
+use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\OrganisationConfiguration;
+use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\OrganisationWrapper;
 use DOMDocument;
 use DOMXPath;
 
 class FetchOrganisationsCommand extends Command {
+	public function __construct(
+		private CertificateRepository $certificateRepository,
+		private Configuration $configuration,
+	) {
+		parent::__construct();
+	}
 
 	protected function configure(): void {
 		$this
 			->setName('dkmunicipalorganisation:fetch-orgs')
-			->setDescription('Fetch organisations from the organisation service')
-            ->addArgument('certificate_password', InputArgument::REQUIRED, 'Password for the certificate');
+			->setDescription('Fetch organisations from the organisation service');
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$certificatePassword = (string)$input->getArgument('certificate_password');
 		$output->writeln('<info>Issuing SAML token…</info>');
 
 		try {
-			$certificatesPath = '/var/www/html/apps-extra/dkmunicipalorganisation/certificates/';
+			$certificate = new Certificate(CertificateType::FKOrganisation, $this->certificateRepository);
+			$entityId = $this->configuration->getConfigValue('entity_id_organisation', 'http://stoettesystemerne.dk/service/organisation/3');
 			$samlToken = TokenIssuerREST::issueToken(
-				entityId: "http://stoettesystemerne.dk/service/organisation/3",
-				clientCertificatePath: $certificatesPath . 'Serviceplatformen.p12',
-				clientCertificatePassword: $certificatePassword,
-				cvr: "11111111",
-				tokenIssuerBaseUrl: "https://n2adgangsstyring.eksterntest-stoettesystemerne.dk/"
+				$entityId,
+				$certificate,
+				$this->configuration
 			);
 			$output->writeln('<info>Token issued successfully:</info>');
 
             $output->writeln('<info>Fetching organisations…</info>');
 
             $organisationConfiguration = new OrganisationConfiguration();
-            $organisationConfiguration->setEndpoint("https://organisation.eksterntest-stoettesystemerne.dk/organisation/organisationsystem/6/");
-            $organisationConfiguration->setClientCertificatePath($certificatesPath . 'Serviceplatformen.p12');
-            $organisationConfiguration->setClientCertificatePassword($certificatePassword);
-            //$organisationConfiguration->setOrganisationServiceCertificatePath($certificatesPath . 'current_ORG_EXTTEST_Organisation_1.cer');
+            $endpoint = $this->configuration->getConfigValue('endpoint_organisation', 'https://organisation.eksterntest-stoettesystemerne.dk/organisation/organisationsystem/6/');
+            $organisationConfiguration->setEndpoint($endpoint);
+            $organisationConfiguration->setClientCertificate($certificate);
 
             $organisationWrapper = new OrganisationWrapper($organisationConfiguration, $samlToken);
             $response = $organisationWrapper->fremsoeg(limit: 5, offset: 0);

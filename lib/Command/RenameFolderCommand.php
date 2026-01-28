@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace OCA\DKMunicipalOrganisation\Command;
+namespace OCA\DkMunicipalOrganisation\Command;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;

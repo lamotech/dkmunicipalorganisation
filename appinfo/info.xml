@@ -5,10 +5,10 @@
 	<name>DK Municipal Organisation and Access Control</name>
 	<summary>Danish Municipal Organisation and Access Control Integration</summary>
 	<description>Integration to the Danish Inter-municipal infrastructure for organisation and access control</description>
-	<version>0.1.04</version>
+	<version>0.1.06</version>
 	<licence>agpl</licence>
 	<author mail="dev@lamotech.dk" homepage="https://lamotech.dk">Lamotech Solutions ApS</author>
-	<namespace>DKMunicipalOrganisation</namespace>
+	<namespace>DkMunicipalOrganisation</namespace>
 	<category>organisation</category>
 	<category>security</category>
 	<bugs>https://lamotech.dk</bugs>
@@ -27,19 +27,19 @@
 	</navigations>
 
 	<commands>
-		<command>OCA\DKMunicipalOrganisation\Command\SyncOrganisationsCommand</command>
-		<command>OCA\DKMunicipalOrganisation\Command\CreateFolderCommand</command>
-		<command>OCA\DKMunicipalOrganisation\Command\RenameFolderCommand</command>
-		<command>OCA\DKMunicipalOrganisation\Command\SetFolderPermissionsCommand</command>
-		<command>OCA\DKMunicipalOrganisation\Command\ShowSyncLogCommand</command>
-		<command>OCA\DKMunicipalOrganisation\Command\ValidateOrganisationsCommand</command>
-		<command>OCA\DKMunicipalOrganisation\Command\GenerateSAMLMetadataCommand</command>
-		<command>OCA\DKMunicipalOrganisation\Command\IssueTokenCommand</command>
-		<command>OCA\DKMunicipalOrganisation\Command\FetchOrganisationsCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\SyncOrganisationsCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\CreateFolderCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\RenameFolderCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\SetFolderPermissionsCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\ShowSyncLogCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\ValidateOrganisationsCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\GenerateSAMLMetadataCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\IssueTokenCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\FetchOrganisationsCommand</command>
 	</commands>
 	<!--
 	<backgroundjobs>
-		<backgroundjob>OCA\DKMunicipalOrganisation\BackgroundJob\SyncOrganisationsJob</backgroundjob>
+		<backgroundjob>OCA\DkMunicipalOrganisation\BackgroundJob\SyncOrganisationsJob</backgroundjob>
 	</backgroundjobs>
 	-->
 </info>

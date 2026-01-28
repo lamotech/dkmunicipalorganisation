@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace OCA\DKMunicipalOrganisation\Migration;
+namespace OCA\DkMunicipalOrganisation\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;

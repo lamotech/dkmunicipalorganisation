@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace OCA\DKMunicipalOrganisation\Service;
+namespace OCA\DkMunicipalOrganisation\Service;
 
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;

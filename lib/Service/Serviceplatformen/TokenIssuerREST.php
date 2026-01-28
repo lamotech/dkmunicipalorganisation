@@ -1,7 +1,9 @@
 <?php
 
-namespace OCA\DKMunicipalOrganisation\Service\Serviceplatformen;
+namespace OCA\DkMunicipalOrganisation\Service\Serviceplatformen;
 
+use OCA\DkMunicipalOrganisation\Service\Certificate;
+use OCA\DkMunicipalOrganisation\Service\Configuration;
 use Exception;
 
 /**
@@ -25,29 +27,29 @@ class TokenIssuerREST
      * Issue a SAML token using the REST API
      *
      * @param string $entityId The service entity ID (AppliesTo)
-     * @param string $clientCertificatePath Path to PKCS#12 certificate file
-     * @param string $clientCertificatePassword Certificate password
-     * @param string $cvr CVR number
-     * @param string $tokenIssuerBaseUrl Base URL of the STS service
+     * @param Certificate $certificate The client certificate
+     * @param Configuration $configuration The configuration service
      * @return SAMLToken The issued SAML token
      * @throws Exception
      */
     public static function issueToken(
         string $entityId,
-        string $clientCertificatePath,
-        string $clientCertificatePassword,
-        string $cvr,
-        string $tokenIssuerBaseUrl
+        Certificate $certificate,
+        Configuration $configuration,
     ): SAMLToken {
+        // Get configuration
+        $cvr = $configuration->getConfigValue('cvr', '11111111');
+        $tokenIssuerBaseUrl = $configuration->getConfigValue('token_issuer_base_url', 'https://n2adgangsstyring.eksterntest-stoettesystemerne.dk/');
+        $tokenIssuerEndpoint = $configuration->getConfigValue('token_issuer_endpoint', '/runtime/api/rest/wstrust/v1/issue');
+
         // Build the REST API URL
-        $apiUrl = rtrim($tokenIssuerBaseUrl, '/') . '/runtime/api/rest/wstrust/v1/issue';
+        $apiUrl = rtrim($tokenIssuerBaseUrl, '/') . $tokenIssuerEndpoint;
 
-        // Convert PKCS#12 to PEM format for cURL
-        $pemFiles = self::convertP12ToPem($clientCertificatePath, $clientCertificatePassword);
-
+		// Store certificate keys in tempora files for curl
+        $pemFiles = self::storeTempPemFiles($certificate);
         try {
             // Build the request payload (needs pemFiles to extract certificate)
-            $requestPayload = self::buildRequestPayload($entityId, $cvr, $pemFiles);
+            $requestPayload = self::buildRequestPayload($entityId, $cvr, $certificate);
 
             // Send the REST request with client certificate authentication
             $response = self::sendRestRequest($apiUrl, $requestPayload, $pemFiles);
@@ -68,18 +70,8 @@ class TokenIssuerREST
     /**
      * Build the request payload according to the API specification
      */
-    private static function buildRequestPayload(string $appliesTo, string $cvr, array $pemFiles): array
+    private static function buildRequestPayload(string $appliesTo, string $cvr, Certificate $certificate): array
     {
-        // Load the certificate to extract the public key
-        $certContent = file_get_contents($pemFiles['cert']);
-
-        // Remove PEM headers and newlines to get base64 content
-        $certBase64 = str_replace(
-            ['-----BEGIN CERTIFICATE-----', '-----END CERTIFICATE-----', "\n", "\r", ' '],
-            '',
-            $certContent
-        );
-
         return [
             'AppliesTo' => [
                 'EndpointReference' => [
@@ -92,7 +84,7 @@ class TokenIssuerREST
             'Anvenderkontekst' => [
                 'Cvr' => $cvr
             ],
-            'UseKey' => $certBase64
+            'UseKey' => $certificate->getPublicKeyBase64()
         ];
     }
 
@@ -183,31 +175,20 @@ class TokenIssuerREST
     /**
      * Convert PKCS#12 certificate to PEM format
      */
-    private static function convertP12ToPem(string $p12Path, string $password): array
+    private static function storeTempPemFiles(Certificate $certificate): array
     {
-        if (!file_exists($p12Path)) {
-            throw new Exception("Certificate file not found: {$p12Path}");
-        }
-
-        $p12Content = file_get_contents($p12Path);
-        $certData = [];
-
-        if (!openssl_pkcs12_read($p12Content, $certData, $password)) {
-            throw new Exception("Failed to read PKCS#12 certificate: " . openssl_error_string());
-        }
-
         // Create separate files for certificate and private key
         $uniqueId = uniqid();
         $certPath = sys_get_temp_dir() . '/rest_client_cert_' . $uniqueId . '.crt';
         $keyPath = sys_get_temp_dir() . '/rest_client_key_' . $uniqueId . '.key';
 
         // Write certificate file
-        if (file_put_contents($certPath, $certData['cert']) === false) {
+        if (file_put_contents($certPath, $certificate->getPublicKey()) === false) {
             throw new Exception("Failed to write certificate file");
         }
 
         // Write private key file
-        if (file_put_contents($keyPath, $certData['pkey']) === false) {
+        if (file_put_contents($keyPath, $certificate->getPrivateKey()) === false) {
             throw new Exception("Failed to write private key file");
         }
 

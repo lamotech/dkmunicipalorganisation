@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace OCA\DKMunicipalOrganisation\Db;
+namespace OCA\DkMunicipalOrganisation\Db;
 
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;

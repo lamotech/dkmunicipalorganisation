@@ -1,11 +1,11 @@
 <?php
 
 // lib/Service/OrganisationSyncService.php
-namespace OCA\DKMunicipalOrganisation\Service;
+namespace OCA\DkMunicipalOrganisation\Service;
 
-use OCA\DKMunicipalOrganisation\Db\OrganisationRepository;
-use OCA\DKMunicipalOrganisation\Db\OrgSyncLogRepository;
-use OCA\DKMunicipalOrganisation\Service\OrgDirectoryClient;
+use OCA\DkMunicipalOrganisation\Db\OrganisationRepository;
+use OCA\DkMunicipalOrganisation\Db\OrgSyncLogRepository;
+use OCA\DkMunicipalOrganisation\Service\OrgDirectoryClient;
 use OCP\IGroupManager;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCA\GroupFolders\Folder\FolderManager;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use OCP\Util;
 
-Util::addScript(OCA\DKMunicipalOrganisation\AppInfo\Application::APP_ID, OCA\DKMunicipalOrganisation\AppInfo\Application::APP_ID . '-main');
-Util::addStyle(OCA\DKMunicipalOrganisation\AppInfo\Application::APP_ID, OCA\DKMunicipalOrganisation\AppInfo\Application::APP_ID . '-main');
+Util::addScript(OCA\DkMunicipalOrganisation\AppInfo\Application::APP_ID, OCA\DkMunicipalOrganisation\AppInfo\Application::APP_ID . '-main');
+Util::addStyle(OCA\DkMunicipalOrganisation\AppInfo\Application::APP_ID, OCA\DkMunicipalOrganisation\AppInfo\Application::APP_ID . '-main');
 
 ?>
 

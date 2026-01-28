@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace OCA\DKMunicipalOrganisation\Command;
+namespace OCA\DkMunicipalOrganisation\Command;
 
-use OCA\DKMunicipalOrganisation\Service\OrganisationSyncService;
+use OCA\DkMunicipalOrganisation\Service\OrganisationSyncService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;

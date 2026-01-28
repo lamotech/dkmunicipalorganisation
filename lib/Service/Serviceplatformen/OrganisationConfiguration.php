@@ -1,7 +1,7 @@
 <?php
     
-    namespace OCA\DKMunicipalOrganisation\Service\Serviceplatformen;
-
+    namespace OCA\DkMunicipalOrganisation\Service\Serviceplatformen;
+use OCA\DkMunicipalOrganisation\Service\Certificate;
 /**
  * OrganisationConfiguration - Configuration for the Organisation service
  *
@@ -11,6 +11,7 @@
 class OrganisationConfiguration
 {
     private string $endpoint;
+    private Certificate $clientCertificate;
     private string $clientCertificatePath;
     private string $clientCertificatePassword;
     private string $organisationServiceCertificatePath;
@@ -23,6 +24,17 @@ class OrganisationConfiguration
     public function setEndpoint(string $endpoint): self
     {
         $this->endpoint = $endpoint;
+        return $this;
+    }
+
+    public function getClientCertificate(): Certificate
+    {
+        return $this->clientCertificate;
+    }
+
+    public function setClientCertificate(Certificate $clientCertificate): self
+    {
+        $this->clientCertificate = $clientCertificate;
         return $this;
     }
 

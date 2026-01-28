@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace OCA\DKMunicipalOrganisation\Command;
+namespace OCA\DkMunicipalOrganisation\Command;
 
-use OCA\DKMunicipalOrganisation\Db\OrganisationRepository;
+use OCA\DkMunicipalOrganisation\Db\OrganisationRepository;
 use OCA\GroupFolders\Folder\FolderManager;
 use OCP\Constants;
 use OCP\IGroupManager;

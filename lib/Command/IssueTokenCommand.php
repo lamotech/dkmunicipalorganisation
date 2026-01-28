@@ -1,38 +1,46 @@
 <?php
 declare(strict_types=1);
 
-namespace OCA\DKMunicipalOrganisation\Command;
+namespace OCA\DkMunicipalOrganisation\Command;
 
-use OCA\DKMunicipalOrganisation\Service\Serviceplatformen\TokenIssuer;
-use OCA\DKMunicipalOrganisation\Service\Serviceplatformen\TokenIssuerREST;
-use OCA\DKMunicipalOrganisation\Service\Serviceplatformen\SAMLToken;
+use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\TokenIssuerREST;
+use OCA\DkMunicipalOrganisation\Db\CertificateRepository;
+use OCA\DkMunicipalOrganisation\Service\Certificate;
+use OCA\DkMunicipalOrganisation\Service\Configuration;
+use OCA\DkMunicipalOrganisation\Enum\CertificateType;
+use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\SAMLToken;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class IssueTokenCommand extends Command {
+	public function __construct(
+		private CertificateRepository $certificateRepository,
+		private Configuration $configuration,
+	) {
+		parent::__construct();
+	}
 
 	protected function configure(): void {
 		$this
 			->setName('dkmunicipalorganisation:issue-token')
-			->setDescription('Issue a SAML2 token from STS using WS-Trust 1.3')
-            ->addArgument('certificate_password', InputArgument::REQUIRED, 'Password for the certificate');
+			->setDescription('Issue a SAML2 token from STS using WS-Trust 1.3');
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$certificatePassword = (string)$input->getArgument('certificate_password');
+		//$certificatePassword = (string)$input->getArgument('certificate_password');
 		$output->writeln('<info>Issuing SAML token…</info>');
 
 		try {
-			$certificatesPath = '/var/www/html/apps-extra/dkmunicipalorganisation/certificates/';
+			$certificate = new Certificate(CertificateType::FKOrganisation, $this->certificateRepository);
+			$entityId = $this->configuration->getConfigValue('entity_id_organisation', 'http://stoettesystemerne.dk/service/organisation/3');
 			$samlToken = TokenIssuerREST::issueToken(
-				entityId: "http://stoettesystemerne.dk/service/organisation/3",
-				clientCertificatePath: $certificatesPath . 'Serviceplatformen.p12',
-				clientCertificatePassword: $certificatePassword,
-				cvr: "11111111",
-				tokenIssuerBaseUrl: "https://n2adgangsstyring.eksterntest-stoettesystemerne.dk/"
+				$entityId,
+				$certificate,
+				$this->configuration
 			);
+
 			$output->writeln('<info>Token issued successfully:</info>');
 			$output->writeln(json_encode($samlToken->getMetadata(), JSON_PRETTY_PRINT));
 
