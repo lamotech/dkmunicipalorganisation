@@ -19,7 +19,7 @@ class Version000101Date20260102000000 extends SimpleMigrationStep {
 			$table->addColumn('org_name', 'string', ['length' => 255]);
 			$table->addColumn('nc_group_id', 'string', ['length' => 128, 'notnull' => true]);
 			$table->addColumn('groupfolder_id', 'integer', ['notnull' => false]);
-			$table->addColumn('active', 'boolean', ['default' => true]);
+			$table->addColumn('active', 'boolean', ['notnull' => false, 'default' => true]);
 			$table->addColumn('last_seen_at', 'integer', ['notnull' => true, 'default' => 0]);
 
 			$table->setPrimaryKey(['org_uuid']);
