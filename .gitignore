@@ -14,8 +14,6 @@ Thumbs.db
 /node_modules/
 
 # Build artifacts
-/js/
-/css/
 *.map
 
 # PHP
