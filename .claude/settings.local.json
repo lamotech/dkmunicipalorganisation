@@ -8,7 +8,10 @@
       "Bash(npx vite build:*)",
       "Bash(npm install:*)",
       "Bash(npm ls:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(composer dump-autoload:*)",
+      "Bash(where:*)",
+      "Bash(php -r:*)"
     ]
   }
 }
