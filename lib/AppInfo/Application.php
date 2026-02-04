@@ -9,6 +9,7 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCA\DkMunicipalOrganisation\Service\Configuration;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\ISession;
@@ -39,6 +40,7 @@ class Application extends App implements IBootstrap {
 				IConfig $config,
 				ISession $session,
 				LoggerInterface $logger,
+				Configuration $configuration,
 				bool $isCLI,
 			): void {
 				if ($isCLI) {
@@ -233,9 +235,9 @@ class Application extends App implements IBootstrap {
 					return;
 				}
 
-				// Optional: feature flag so you can disable quickly
-				$enabled = $config->getAppValue(self::APP_ID, 'auto_redirect_enabled', '1');
-				if ($enabled !== '1') {
+				// Only redirect to SAML login when access control is enabled
+				$accessControlEnabled = $configuration->getConfigValue('access_control_enable', '0');
+				if ($accessControlEnabled !== '1') {
 					return;
 				}
 

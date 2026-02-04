@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /s \"c:\\\\Projects\\\\Nextcloud\\\\nextcloud-docker-dev\\\\workspace\\\\server\\\\apps-extra\\\\dkmunicipalorganisation\")",
+      "Bash(findstr:*)",
+      "Bash(find:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx vite build:*)",
+      "Bash(npm install:*)",
+      "Bash(npm ls:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}

@@ -16,6 +16,7 @@ use OCA\DkMunicipalOrganisation\Db\CertificateRepository;
 use OCA\DkMunicipalOrganisation\Enum\CertificateType;
 use OCA\DkMunicipalOrganisation\Service\Certificate;
 use OCA\DkMunicipalOrganisation\Service\SamlService;
+use OCA\DkMunicipalOrganisation\Service\SamlMetadataService;
 use OCP\IURLGenerator;
 use OCP\ISession;
 use OCP\IUserManager;
@@ -24,6 +25,7 @@ use OCP\Authentication\Token\IToken;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\User\Events\UserFirstTimeLoggedInEvent;
 use OCP\IUser;
+use OCP\IGroupManager;
 /**
  * These endpoints must be callable by the IdP, so they are public and no CSRF.
  *
@@ -36,12 +38,14 @@ class SamlController extends Controller {
 		string $appName,
 		IRequest $request,
 		private SamlService $samlService,
+		private SamlMetadataService $samlMetadataService,
 		private IURLGenerator $urlGenerator,
 		private ISession $session,
 		private IUserManager $userManager,
 		private IUserSession $userSession,
 		private readonly IEventDispatcher $eventDispatcher,
 		private CertificateRepository $certificateRepository,
+		private IGroupManager $groupManager,
 	) {
 		parent::__construct($appName, $request);
 	}
@@ -74,7 +78,7 @@ class SamlController extends Controller {
 	 * @NoCSRFRequired
 	 */
 	public function metadata(): Response {
-		$xml = $this->samlService->getSpMetadataXml();
+		$xml = $this->samlMetadataService->createSAMLMetadata();
 
 		$response = new class($xml) extends Response implements ICallbackResponse {
 			private string $content;
@@ -154,7 +158,7 @@ class SamlController extends Controller {
 		$principal = $this->parseDecryptedAssertion($decryptedAssertion);
 
 		// Check user privileges from the assertion
-		$privilege = $this->getUserPrivilege($decryptedAssertion);
+		$privilege = $this->getUserPrivilege($principal, $decryptedAssertion);
 
 		// Create Nextcloud user session
 		$uuid = $principal['uuid'] ?? null;
@@ -229,6 +233,59 @@ class SamlController extends Controller {
 				'action' => 'user_reactivated',
 				'userId' => $userId,
 			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+		}
+
+		// Sync administrator group membership
+		$adminGroup = $this->groupManager->get('admin');
+		if ($adminGroup !== null) {
+			if ($privilege['isAdministrator'] && !$adminGroup->inGroup($user)) {
+				$adminGroup->addUser($user);
+				file_put_contents($logFile, json_encode([
+					'timestamp' => date('Y-m-d H:i:s'),
+					'action' => 'admin_group_added',
+					'userId' => $userId,
+				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			} elseif (!$privilege['isAdministrator'] && $adminGroup->inGroup($user)) {
+				$adminGroup->removeUser($user);
+				file_put_contents($logFile, json_encode([
+					'timestamp' => date('Y-m-d H:i:s'),
+					'action' => 'admin_group_removed',
+					'userId' => $userId,
+				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			}
+		}
+
+		// Sync organisation group memberships
+		$grantedGroupIds = array_map(fn(string $uuid) => 'org_' . $uuid, $privilege['grantedOrganisations']);
+		$userGroups = $this->groupManager->getUserGroups($user);
+		// Remove from org_ groups the user should no longer be in
+		foreach ($userGroups as $group) {
+			$groupId = $group->getGID();
+			if (str_starts_with($groupId, 'org_') && !in_array($groupId, $grantedGroupIds)) {
+				$group->removeUser($user);
+				file_put_contents($logFile, json_encode([
+					'timestamp' => date('Y-m-d H:i:s'),
+					'action' => 'org_group_removed',
+					'userId' => $userId,
+					'groupId' => $groupId,
+				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			}
+		}
+		// Add to granted org_ groups
+		foreach ($grantedGroupIds as $groupId) {
+			$group = $this->groupManager->get($groupId);
+			if ($group === null) {
+				$group = $this->groupManager->createGroup($groupId);
+			}
+			if ($group !== null && !$group->inGroup($user)) {
+				$group->addUser($user);
+				file_put_contents($logFile, json_encode([
+					'timestamp' => date('Y-m-d H:i:s'),
+					'action' => 'org_group_added',
+					'userId' => $userId,
+					'groupId' => $groupId,
+				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			}
 		}
 
 		// Log before login attempt
@@ -629,13 +686,43 @@ class SamlController extends Controller {
 	 * @param string $decryptedAssertion The decrypted SAML assertion XML
 	 * @return array{isUser: bool, isAdministrator: bool, grantedOrganisations: array<string>}
 	 */
-	private function getUserPrivilege(string $decryptedAssertion): array {
+	private function getUserPrivilege(array $principal, string $decryptedAssertion): array {
 		// TODO: Parse actual privilege attributes from assertion
 		// For now, return default values
+
+		$isUser = true;
+		$isAdministrator = false;
+		$grantedOrganisations = [];
+
+		$uuid = $principal['uuid'] ?? null;
+
+		// Matt Damon
+		if ($uuid === "ef8f9972-d6c7-4ea0-baf7-40ff1ddacf21") {
+			$isUser = false;
+		}
+
+		// Bruce Lee
+		if ($uuid === "f484ab2a-5fc7-4169-8641-611ce7836267") {
+			$isAdministrator = true;
+		}
+
+		// Kurt Russell
+		if ($uuid === "b208318b-2e9c-4830-a95f-8388dcb77a94") {
+			$grantedOrganisations[] = "02aa7c20-4f98-421b-8840-81e801c5eb11";
+		}
+
+		// Daniel Craig
+		if ($uuid === "adc10994-ceb4-4b22-8366-bc73773a03ae") {
+			$grantedOrganisations[] = "00d51afd-1c97-4c9c-85c7-b68de736dd23";
+			$grantedOrganisations[] = "02aa7c20-4f98-421b-8840-81e801c5eb11";
+			$grantedOrganisations[] = "0414233d-fd73-4376-8ce9-02917cafa6b9";
+			$grantedOrganisations[] = "060a9fdf-2eed-4d78-a97c-7289ee6482e9";
+		}
+
 		return [
-			'isUser' => true,
-			'isAdministrator' => false,
-			'grantedOrganisations' => [],
+			'isUser' => $isUser,
+			'isAdministrator' => $isAdministrator,
+			'grantedOrganisations' => $grantedOrganisations,
 		];
 	}
 

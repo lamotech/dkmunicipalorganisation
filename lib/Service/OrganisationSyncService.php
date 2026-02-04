@@ -4,6 +4,7 @@
 namespace OCA\DkMunicipalOrganisation\Service;
 
 use OCA\DkMunicipalOrganisation\Db\OrganisationRepository;
+use OCA\DkMunicipalOrganisation\Dto\OrganisationData;
 use OCA\DkMunicipalOrganisation\Db\OrgSyncLogRepository;
 use OCA\DkMunicipalOrganisation\Service\OrgDirectoryClient;
 use OCP\IGroupManager;
@@ -31,9 +32,9 @@ class OrganisationSyncService {
 
 		if(count($orgs) > 0) {
 			foreach ($orgs as $org) {
-				$uuid = (string)$org['uuid'];
-				$name = (string)$org['name'];
-				$parentUuid = (string)$org['parentuuid'];
+				$uuid = $org->uuid;
+				$name = $org->name;
+				$parentUuid = $org->parentUuid;
 				$seen[$uuid] = true;
 
 				$row = $this->repo->find($uuid);

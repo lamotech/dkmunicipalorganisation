@@ -3,52 +3,71 @@ declare(strict_types=1);
 
 namespace OCA\DkMunicipalOrganisation\Service;
 
+use OCA\DkMunicipalOrganisation\Dto\OrganisationData;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
+use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\TokenIssuerREST;
+use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\SAMLToken;
+use OCA\DkMunicipalOrganisation\Db\CertificateRepository;
+use OCA\DkMunicipalOrganisation\Service\Certificate;
+use OCA\DkMunicipalOrganisation\Service\Configuration;
+use OCA\DkMunicipalOrganisation\Enum\CertificateType;use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\OrganisationConfiguration;
+use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\OrganisationWrapper;
+use DOMDocument;
+use DOMXPath;
 
 class OrgDirectoryClient {
 	public function __construct(
 		private IClientService $http,
 		private IConfig $config,
+		private CertificateRepository $certificateRepository,
+		private Configuration $configuration,		
 	) {}
 
 	/**
-	 * @return array<int, array{uuid:string, name:string}>
+	 * @return OrganisationData[]
 	 */
 	public function fetchOrganisations(): array {
-        /*
-		$url = (string)$this->config->getAppValue('dkmunicipalorganisation', 'org_service_url', '');
-		if ($url === '') {
-			throw new \RuntimeException('org_service_url is not configured');
+		// Get a SAML Token
+		$certificate = new Certificate(CertificateType::FKOrganisation, $this->certificateRepository);
+		$entityId = $this->configuration->getConfigValue('entity_id_organisation', 'http://stoettesystemerne.dk/service/organisation/3');
+		$samlToken = TokenIssuerREST::issueToken(
+			$entityId,
+			$certificate,
+			$this->configuration
+		);
+
+		// Setup Organisation Service
+		$organisationConfiguration = new OrganisationConfiguration();
+		$endpoint = $this->configuration->getConfigValue('endpoint_organisation', 'https://organisation.eksterntest-stoettesystemerne.dk/organisation/organisationsystem/6/');
+		$organisationConfiguration->setEndpoint($endpoint);
+		$organisationConfiguration->setClientCertificate($certificate);
+		$organisationWrapper = new OrganisationWrapper($organisationConfiguration, $samlToken);
+
+		// Get organisations
+		$organisations = [];
+		$response = $organisationWrapper->fremsoeg(limit: 5, offset: 0);
+		
+		// Parse XML and extract EnhedNavn values
+		$doc = new DOMDocument();
+		$doc->loadXML($response);
+		
+		$xpath = new DOMXPath($doc);
+		// Register namespaces
+		$xpath->registerNamespace('ns2', 'urn:oio:sagdok:3.0.0');
+		$xpath->registerNamespace('ns5', 'http://stoettesystemerne.dk/organisation/organisationenhed/6/');
+		$xpath->registerNamespace('ns6', 'http://stoettesystemerne.dk/organisation/organisationsystem/6/');
+		
+		// Loop through OrganisationEnheder
+		$nodes = $xpath->query('//ns6:OrganisationEnheder//ns6:FiltreretOejebliksbillede');
+		foreach ($nodes as $node) {
+			$uuid = $xpath->evaluate('string(ns5:ObjektType/ns2:UUIDIdentifikator)', $node);
+			$name = $xpath->evaluate('string(ns5:Registrering/ns5:AttributListe/ns5:Egenskab/ns2:EnhedNavn)', $node);
+			$parentUuid = $xpath->evaluate('string(ns5:Registrering/ns5:RelationListe/ns2:Overordnet/ns2:ReferenceID/ns2:UUIDIdentifikator)', $node);
+
+			$organisations[] = new OrganisationData($uuid, $name, $parentUuid);
 		}
 
-		$client = $this->http->newClient();
-		$res = $client->get($url, [
-			'timeout' => 20,
-			'headers' => [
-				'Accept' => 'application/json',
-			],
-		]);
-
-		$data = json_decode($res->getBody(), true, 512, JSON_THROW_ON_ERROR);
-
-		// Normalize: expect array of items with uuid + name
-		$out = [];
-		foreach ($data as $item) {
-			if (!isset($item['uuid'], $item['name'])) {
-				continue;
-			}
-			$out[] = ['uuid' => (string)$item['uuid'], 'name' => (string)$item['name']];
-		}*/
-
-        $out = [
-            ['uuid' => 'ada1f8a7-31d0-4fc8-9866-8e3182f40ef2', 'name' => 'Root Organisation', 'parentuuid' => null],
-            ['uuid' => '29de658d-8ae0-4881-a040-6fd37aaddf26', 'name' => 'Test Organisation 1', 'parentuuid' => 'ada1f8a7-31d0-4fc8-9866-8e3182f40ef2'],
-            ['uuid' => '6215fe52-6060-4575-b0f7-b439740832a6', 'name' => 'Test Organisation 2', 'parentuuid' => 'ada1f8a7-31d0-4fc8-9866-8e3182f40ef2'],
-            ['uuid' => '04b77640-0761-4e6f-9810-aad455d929f9', 'name' => 'Test Organisation 2-1', 'parentuuid' => '6215fe52-6060-4575-b0f7-b439740832a6'],
-            ['uuid' => '4315e237-3f23-495d-9dcd-72d85f9911de', 'name' => 'Test Organisation 2-2', 'parentuuid' => '6215fe52-6060-4575-b0f7-b439740832a6'],
-            ['uuid' => '7cfb9ecd-b537-43ab-b2c9-fc9739e5b93f', 'name' => 'Test Organisation 3', 'parentuuid' => 'ada1f8a7-31d0-4fc8-9866-8e3182f40ef2'],
-        ];
-		return $out;
+		return $organisations;
 	}
 }

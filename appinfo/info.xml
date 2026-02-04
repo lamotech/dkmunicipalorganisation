@@ -13,19 +13,9 @@
 	<category>security</category>
 	<bugs>https://lamotech.dk</bugs>
 	<dependencies>
-		<nextcloud min-version="30" max-version="32"/>
+		<nextcloud min-version="32" max-version="33"/>
 		<library name="soap" min-version="8.1" max-version="8.2"/>
 	</dependencies>
-	<navigations>
-		<navigation>
-			<id>dkmunicipalorganisation</id>
-			<name>DK Municipal Organisation and Access Control</name>
-			<route>dkmunicipalorganisation.page.index</route>
-			<icon>app.svg</icon>
-			<type>link</type>
-		</navigation>
-	</navigations>
-
 	<commands>
 		<command>OCA\DkMunicipalOrganisation\Command\SyncOrganisationsCommand</command>
 		<command>OCA\DkMunicipalOrganisation\Command\CreateFolderCommand</command>
@@ -37,9 +27,11 @@
 		<command>OCA\DkMunicipalOrganisation\Command\IssueTokenCommand</command>
 		<command>OCA\DkMunicipalOrganisation\Command\FetchOrganisationsCommand</command>
 	</commands>
-	<!--
+	<settings>
+		<admin-section>OCA\DkMunicipalOrganisation\Settings\AdminSection</admin-section>
+		<admin>OCA\DkMunicipalOrganisation\Settings\AdminSettings</admin>
+	</settings>
 	<backgroundjobs>
 		<backgroundjob>OCA\DkMunicipalOrganisation\BackgroundJob\SyncOrganisationsJob</backgroundjob>
 	</backgroundjobs>
-	-->
 </info>

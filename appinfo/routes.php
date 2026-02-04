@@ -11,5 +11,10 @@ return [
     ['name' => 'saml#acs',       'url' => '/saml/acs',       'verb' => 'POST'],
     ['name' => 'saml#sls',       'url' => '/saml/sls',       'verb' => 'GET'],
     ['name' => 'saml#sls_post',  'url' => '/saml/sls',       'verb' => 'POST'],
+
+    ['name' => 'settings#save_certificate',     'url' => '/settings/certificate',          'verb' => 'POST'],
+    ['name' => 'settings#validate_certificate',  'url' => '/settings/certificate/validate', 'verb' => 'POST'],
+    ['name' => 'settings#save_config',           'url' => '/settings/config',               'verb' => 'POST'],
+    ['name' => 'settings#sync_organisations',  'url' => '/settings/sync-organisations',    'verb' => 'POST'],
   ],
 ];
