@@ -86,7 +86,8 @@ class SamlController extends Controller {
 			public function __construct(string $content) {
 				parent::__construct();
 				$this->content = $content;
-				$this->addHeader('Content-Type', 'application/samlmetadata+xml; charset=utf-8');
+				$this->addHeader('Content-Type', 'application/xml; charset=utf-8');
+				$this->addHeader('Content-Disposition', 'attachment; filename="metadata.xml"');
 			}
 
 			public function callback(IOutput $output): void {
