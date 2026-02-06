@@ -159,7 +159,7 @@ class SamlController extends Controller {
 		$principal = $this->parseDecryptedAssertion($decryptedAssertion);
 
 		// Check user privileges from the assertion
-		$privilege = $this->getUserPrivilege($principal, $decryptedAssertion);
+		$privilege = $this->getUserPrivilege($principal);
 
 		// Create Nextcloud user session
 		$uuid = $principal['uuid'] ?? null;
@@ -645,6 +645,19 @@ class SamlController extends Controller {
 		if ($nameId) $this->session->set('dkmo.nameid', $nameId);
 		if ($sessionIndex) $this->session->set('dkmo.session_index', $sessionIndex);
 
+		// Check for Privileges_intermediate attribute and decode if present
+		$privileges = null;
+		$privilegesAttrName = 'dk:gov:saml:attribute:Privileges_intermediate';
+		if (isset($attributes[$privilegesAttrName]) && !empty($attributes[$privilegesAttrName][0])) {
+			$privileges = base64_decode($attributes[$privilegesAttrName][0]);
+		}
+		/************ TEST  *************
+		$privileges64 = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48YnBwOlByaXZpbGVnZUxpc3QgeG1sbnM6YnBwPSJodHRwOi8vaXRzdC5kay9vaW9zYW1sL2Jhc2ljX3ByaXZpbGVnZV9wcm9maWxlIiB4bWxuczp4c2k9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hLWluc3RhbmNlIj48UHJpdmlsZWdlR3JvdXAgU2NvcGU9InVybjpkazpnb3Y6c2FtbDpjdnJOdW1iZXJJZGVudGlmaWVyOjExMTExMTExIj48UHJpdmlsZWdlPmh0dHA6Ly9rb3JzYmFlay5sYW1vdGVjaC5kay9yb2xlcy91c2Vyc3lzdGVtcm9sZS9zeXN0ZW1hZG1pbmlzdHJhdG9yLzE8L1ByaXZpbGVnZT48L1ByaXZpbGVnZUdyb3VwPjwvYnBwOlByaXZpbGVnZUxpc3Q+";
+		$privileges64 = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48YnBwOlByaXZpbGVnZUxpc3QgeG1sbnM6YnBwPSJodHRwOi8vaXRzdC5kay9vaW9zYW1sL2Jhc2ljX3ByaXZpbGVnZV9wcm9maWxlIiB4bWxuczp4c2k9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hLWluc3RhbmNlIj48UHJpdmlsZWdlR3JvdXAgU2NvcGU9InVybjpkazpnb3Y6c2FtbDpjdnJOdW1iZXJJZGVudGlmaWVyOjExMTExMTExIj48UHJpdmlsZWdlPmh0dHA6Ly9rb3JzYmFlay5sYW1vdGVjaC5kay9yb2xlcy91c2Vyc3lzdGVtcm9sZS91c2VyLzE8L1ByaXZpbGVnZT48Q29uc3RyYWludCBOYW1lPSJodHRwOi8vc3RzLmtvbWJpdC5kay9jb25zdHJhaW50cy9vcmdlbmhlZC8xIj40MDUzZDU4ZC1iZDVlLTQ4ZDktYjlkOC0yYzA0MWZhZWNjZDU8L0NvbnN0cmFpbnQ+PC9Qcml2aWxlZ2VHcm91cD48L2JwcDpQcml2aWxlZ2VMaXN0Pg==";
+		$privileges64 = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48YnBwOlByaXZpbGVnZUxpc3QgeG1sbnM6YnBwPSJodHRwOi8vaXRzdC5kay9vaW9zYW1sL2Jhc2ljX3ByaXZpbGVnZV9wcm9maWxlIiB4bWxuczp4c2k9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hLWluc3RhbmNlIj48UHJpdmlsZWdlR3JvdXAgU2NvcGU9InVybjpkazpnb3Y6c2FtbDpjdnJOdW1iZXJJZGVudGlmaWVyOjExMTExMTExIj48UHJpdmlsZWdlPmh0dHA6Ly9rb3JzYmFlay5sYW1vdGVjaC5kay9yb2xlcy91c2Vyc3lzdGVtcm9sZS91c2VyLzE8L1ByaXZpbGVnZT48Q29uc3RyYWludCBOYW1lPSJodHRwOi8vc3RzLmtvbWJpdC5kay9jb25zdHJhaW50cy9vcmdlbmhlZC8xIj40MDUzZDU4ZC1iZDVlLTQ4ZDktYjlkOC0yYzA0MWZhZWNjZDUsIDdhYzU2Y2M3LWEzZDgtNDBlYi1iMmQ2LWY5NDA5NmEyNzFiZjwvQ29uc3RyYWludD48L1ByaXZpbGVnZUdyb3VwPjwvYnBwOlByaXZpbGVnZUxpc3Q+";
+		$privileges = base64_decode($privileges64);
+		/********************************/
+
 		return [
 			'uuid' => (string)$uuid,
 			'displayName' => (string)$displayName,
@@ -654,6 +667,7 @@ class SamlController extends Controller {
 			'nameId' => $nameId,
 			'sessionIndex' => $sessionIndex,
 			'parsedNameId' => $parsedNameId,
+			'privileges' => $privileges,
 		];
 	}
 
@@ -682,42 +696,64 @@ class SamlController extends Controller {
 	}
 
 	/**
-	 * Get user privilege information from the decrypted SAML assertion
+	 * Get user privilege information from the principal's privileges XML
 	 *
-	 * @param string $decryptedAssertion The decrypted SAML assertion XML
+	 * @param array $principal The principal data including privileges XML
 	 * @return array{isUser: bool, isAdministrator: bool, grantedOrganisations: array<string>}
 	 */
-	private function getUserPrivilege(array $principal, string $decryptedAssertion): array {
-		// TODO: Parse actual privilege attributes from assertion
-		// For now, return default values
-
-		$isUser = true;
+	private function getUserPrivilege(array $principal): array {
+		$isUser = false;
 		$isAdministrator = false;
 		$grantedOrganisations = [];
 
-		$uuid = $principal['uuid'] ?? null;
-
-		// Matt Damon
-		if ($uuid === "ef8f9972-d6c7-4ea0-baf7-40ff1ddacf21") {
-			$isUser = false;
+		$privilegesXml = $principal['privileges'] ?? null;
+		if ($privilegesXml === null) {
+			return [
+				'isUser' => $isUser,
+				'isAdministrator' => $isAdministrator,
+				'grantedOrganisations' => $grantedOrganisations,
+			];
 		}
 
-		// Bruce Lee
-		if ($uuid === "f484ab2a-5fc7-4169-8641-611ce7836267") {
+		// Parse the privileges XML
+		$doc = new \DOMDocument();
+		if (!$doc->loadXML($privilegesXml)) {
+			return [
+				'isUser' => $isUser,
+				'isAdministrator' => $isAdministrator,
+				'grantedOrganisations' => $grantedOrganisations,
+			];
+		}
+
+		$xpath = new \DOMXPath($doc);
+		$xpath->registerNamespace('bpp', 'http://itst.dk/oiosaml/basic_privilege_profile');
+
+		// Check for systemadministrator privilege (match path regardless of domain)
+		$adminPrivilege = $xpath->query('//bpp:PrivilegeList/PrivilegeGroup/Privilege[contains(text(), "/roles/usersystemrole/systemadministrator/1")]');
+		if ($adminPrivilege->length > 0) {
+			$isUser = true;
 			$isAdministrator = true;
 		}
 
-		// Kurt Russell
-		if ($uuid === "b208318b-2e9c-4830-a95f-8388dcb77a94") {
-			$grantedOrganisations[] = "02aa7c20-4f98-421b-8840-81e801c5eb11";
-		}
+		// Check for user privilege and extract organisation constraints (match path regardless of domain)
+		$userPrivilegeGroups = $xpath->query('//bpp:PrivilegeList/PrivilegeGroup[Privilege[contains(text(), "/roles/usersystemrole/user/1")]]');
+		if ($userPrivilegeGroups->length > 0) {
+			$isUser = true;
 
-		// Daniel Craig
-		if ($uuid === "adc10994-ceb4-4b22-8366-bc73773a03ae") {
-			$grantedOrganisations[] = "00d51afd-1c97-4c9c-85c7-b68de736dd23";
-			$grantedOrganisations[] = "02aa7c20-4f98-421b-8840-81e801c5eb11";
-			$grantedOrganisations[] = "0414233d-fd73-4376-8ce9-02917cafa6b9";
-			$grantedOrganisations[] = "060a9fdf-2eed-4d78-a97c-7289ee6482e9";
+			// Extract organisation UUIDs from constraints
+			foreach ($userPrivilegeGroups as $group) {
+				$constraints = $xpath->query('Constraint[@Name="http://sts.kombit.dk/constraints/orgenhed/1"]', $group);
+				foreach ($constraints as $constraint) {
+					$uuids = trim($constraint->textContent);
+					// UUIDs are comma-separated
+					$uuidArray = array_map('trim', explode(',', $uuids));
+					foreach ($uuidArray as $uuid) {
+						if (!empty($uuid) && !in_array($uuid, $grantedOrganisations)) {
+							$grantedOrganisations[] = $uuid;
+						}
+					}
+				}
+			}
 		}
 
 		return [

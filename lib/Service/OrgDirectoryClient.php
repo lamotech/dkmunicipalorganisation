@@ -46,26 +46,38 @@ class OrgDirectoryClient {
 
 		// Get organisations
 		$organisations = [];
-		$response = $organisationWrapper->fremsoeg(limit: 5, offset: 0);
-		
-		// Parse XML and extract EnhedNavn values
-		$doc = new DOMDocument();
-		$doc->loadXML($response);
-		
-		$xpath = new DOMXPath($doc);
-		// Register namespaces
-		$xpath->registerNamespace('ns2', 'urn:oio:sagdok:3.0.0');
-		$xpath->registerNamespace('ns5', 'http://stoettesystemerne.dk/organisation/organisationenhed/6/');
-		$xpath->registerNamespace('ns6', 'http://stoettesystemerne.dk/organisation/organisationsystem/6/');
-		
-		// Loop through OrganisationEnheder
-		$nodes = $xpath->query('//ns6:OrganisationEnheder//ns6:FiltreretOejebliksbillede');
-		foreach ($nodes as $node) {
-			$uuid = $xpath->evaluate('string(ns5:ObjektType/ns2:UUIDIdentifikator)', $node);
-			$name = $xpath->evaluate('string(ns5:Registrering/ns5:AttributListe/ns5:Egenskab/ns2:EnhedNavn)', $node);
-			$parentUuid = $xpath->evaluate('string(ns5:Registrering/ns5:RelationListe/ns2:Overordnet/ns2:ReferenceID/ns2:UUIDIdentifikator)', $node);
+		$limit = 500;
+		$offset = 0;
 
-			$organisations[] = new OrganisationData($uuid, $name, $parentUuid);
+		while (true) {
+			$response = $organisationWrapper->fremsoeg(limit: $limit, offset: $offset);
+
+			// Parse XML and extract EnhedNavn values
+			$doc = new DOMDocument();
+			$doc->loadXML($response);
+
+			$xpath = new DOMXPath($doc);
+			// Register namespaces
+			$xpath->registerNamespace('ns2', 'urn:oio:sagdok:3.0.0');
+			$xpath->registerNamespace('ns5', 'http://stoettesystemerne.dk/organisation/organisationenhed/6/');
+			$xpath->registerNamespace('ns6', 'http://stoettesystemerne.dk/organisation/organisationsystem/6/');
+
+			// Loop through OrganisationEnheder
+			$nodes = $xpath->query('//ns6:OrganisationEnheder//ns6:FiltreretOejebliksbillede');
+
+			if (count($nodes) === 0) {
+				break;
+			}
+
+			foreach ($nodes as $node) {
+				$uuid = $xpath->evaluate('string(ns5:ObjektType/ns2:UUIDIdentifikator)', $node);
+				$name = $xpath->evaluate('string(ns5:Registrering/ns5:AttributListe/ns5:Egenskab/ns2:EnhedNavn)', $node);
+				$parentUuid = $xpath->evaluate('string(ns5:Registrering/ns5:RelationListe/ns2:Overordnet/ns2:ReferenceID/ns2:UUIDIdentifikator)', $node);
+
+				$organisations[] = new OrganisationData($uuid, $name, $parentUuid);
+			}
+
+			$offset += $limit;
 		}
 
 		return $organisations;
