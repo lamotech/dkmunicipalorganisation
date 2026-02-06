@@ -26,6 +26,7 @@
 		<command>OCA\DkMunicipalOrganisation\Command\GenerateSAMLMetadataCommand</command>
 		<command>OCA\DkMunicipalOrganisation\Command\IssueTokenCommand</command>
 		<command>OCA\DkMunicipalOrganisation\Command\FetchOrganisationsCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\RegisterCertificateCommand</command>
 	</commands>
 	<settings>
 		<admin-section>OCA\DkMunicipalOrganisation\Settings\AdminSection</admin-section>

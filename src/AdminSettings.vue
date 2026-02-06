@@ -1,44 +1,27 @@
 <template>
 	<div class="dkmunorg-admin-settings">
-		<NcSettingsSection :name="'Systemcertifikat'">
-			<p>Kopier dit systemcertifikat til serveren og angiv stien her.</p>
-
-			<table class="dkmunorg-cert-table">
-				<tr>
-					<td class="dkmunorg-cert-label">
-						<label for="cert-filepath">Sti til systemcertifikat</label>
-					</td>
-					<td>
-						<input id="cert-filepath"
-							v-model="filepath"
-							type="text"
-							:style="{ width: '600px', maxWidth: '100%', boxSizing: 'border-box' }"
-							placeholder="/sti/til/certifikat.p12"
-							@change="onFieldChange">
-					</td>
-				</tr>
-				<tr>
-					<td class="dkmunorg-cert-label">
-						<label for="cert-password">Adgangskode</label>
-					</td>
-					<td>
-						<input id="cert-password"
-							v-model="password"
-							type="password"
-							:style="{ width: '200px', maxWidth: '100%', boxSizing: 'border-box' }"
-							@change="onFieldChange">
-					</td>
-				</tr>
-			</table>
-
-			<div v-if="saving" class="certificate-status">
-				Gemmer...
+		<NcSettingsSection :name="'Forudsætninger'">
+			<div class="dkmunorg-prerequisite">
+				<div v-if="groupfoldersEnabled" class="dkmunorg-cert-info-box">
+					<div><span class="dkmunorg-check">&#10004;</span><strong>Teammapper er installeret</strong></div>
+				</div>			
+				<div v-else class="certificate-error">
+					<div><strong>Teammapper er ikke installeret - app'en er påkrævet</strong></div>
+				</div>			
 			</div>
-			<div v-else-if="certError === 'not_found'" class="certificate-error">
-				Certificatet findes ikke på den angivne sti
+		</NcSettingsSection>
+
+		<NcSettingsSection :name="'Systemcertifikat'">
+			<p>Kopier dit systemcertifikat til serveren og kør denne kommando i roden af Nextcloud installationen for at registrere det:</p>
+			<br/>
+			<p><strong>php occ dkmunicipalorganisation:register-certificate</strong></p>
+			<br/>
+
+			<div v-if="certError === 'not_found'" class="certificate-error">
+				Certifikatet findes ikke på den angivne sti
 			</div>
 			<div v-else-if="certError === 'cannot_read'" class="certificate-error">
-				Certificatet kan ikke læses
+				Certifikatet kan ikke læses
 			</div>
 			<div v-else-if="certSubject" class="dkmunorg-cert-info-box">
 				<div><strong>Navn:</strong> {{ certSubject }}</div>
@@ -112,6 +95,7 @@
 					{{ syncing ? 'Synkroniserer...' : 'Synkroniser organisationer nu' }}
 				</button>
 			</div>
+
 			<div v-if="syncResult" class="dkmunorg-cert-info-box">
 				<div><strong>Hentet:</strong> {{ syncResult.fetched }}</div>
 				<div><strong>Oprettet:</strong> {{ syncResult.created }}</div>
@@ -121,6 +105,28 @@
 			<div v-if="syncError" class="certificate-error">
 				{{ syncError }}
 			</div>
+
+			<table v-if="syncLog.length > 0" class="dkmunorg-sync-log-table">
+				<caption>Synkroniseringslog</caption>
+				<thead>
+					<tr>
+						<th>Tidspunkt</th>
+						<th>Hentet</th>
+						<th>Oprettet</th>
+						<th>Opdateret</th>
+						<th>Deaktiveret</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="(entry, index) in syncLog" :key="index">
+						<td>{{ entry.sync_time }}</td>
+						<td>{{ entry.count_received }}</td>
+						<td>{{ entry.created }}</td>
+						<td>{{ entry.updated }}</td>
+						<td>{{ entry.deactivated }}</td>
+					</tr>
+				</tbody>
+			</table>
 		</NcSettingsSection>
 
 		<NcSettingsSection :name="'Adgangsstyring'">
@@ -152,6 +158,29 @@
 					Download metadata fil
 				</button>
 			</div>
+
+			<table class="dkmunorg-roles-table">
+				<caption>Opret disse brugersystemroller i Fælleskommunalt Administrationsmodul</caption>
+				<thead>
+					<tr>
+						<th>Navn</th>
+						<th>EntityId</th>
+						<th>Dataafgrænsningstyper</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>Bruger</td>
+						<td>http://{{ domain }}/roles/usersystemrole/user/1</td>
+						<td>Organisation</td>
+					</tr>
+					<tr>
+						<td>System Administrator</td>
+						<td>http://{{ domain }}/roles/usersystemrole/systemadministrator/1</td>
+						<td>Ingen</td>
+					</tr>
+				</tbody>
+			</table>
 		</NcSettingsSection>
 	</div>
 </template>
@@ -170,6 +199,9 @@ export default {
 		NcSettingsSection,
 	},
 	computed: {
+		domain() {
+			return window.location.hostname
+		},
 		certExpiresFormatted() {
 			if (!this.certExpiresAt) {
 				return ''
@@ -181,15 +213,17 @@ export default {
 	data() {
 		const certificate = loadState('dkmunicipalorganisation', 'certificate', { filepath: '', password: '' })
 		const config = loadState('dkmunicipalorganisation', 'config', {})
+		const syncLog = loadState('dkmunicipalorganisation', 'syncLog', [])
+		const prerequisites = loadState('dkmunicipalorganisation', 'prerequisites', {})
 		return {
+			groupfoldersEnabled: prerequisites.groupfolders || false,
+			syncLog,
 			filepath: certificate.filepath,
 			password: certificate.password,
 			certSubject: '',
 			certSerialNumber: '',
 			certExpiresAt: 0,
 			certError: '',
-			saving: false,
-			saveTimeout: null,
 			accessControlEnable: config.access_control_enable === '1',
 			idpMetadataUrl: config.idp_metadata_url || '',
 			organisationEnable: config.organisation_enable === '1',
@@ -216,58 +250,6 @@ export default {
 		}
 	},
 	methods: {
-		onFieldChange() {
-			if (this.saveTimeout) {
-				clearTimeout(this.saveTimeout)
-			}
-			this.saveTimeout = setTimeout(() => {
-				this.saveCertificate()
-			}, 500)
-		},
-		async saveCertificate() {
-			if (!this.filepath) {
-				this.certSubject = ''
-				this.certSerialNumber = ''
-				this.certExpiresAt = 0
-				this.certError = ''
-				return
-			}
-
-			this.saving = true
-			this.certSubject = ''
-			this.certSerialNumber = ''
-			this.certExpiresAt = 0
-			this.certError = ''
-
-			try {
-				const response = await axios.post(
-					generateUrl('/apps/dkmunicipalorganisation/settings/certificate'),
-					{
-						filepath: this.filepath,
-						password: this.password,
-					},
-				)
-				const validation = response.data.validation
-				if (validation.valid) {
-					this.certSubject = validation.subject
-					this.certSerialNumber = validation.serialNumber
-					this.certExpiresAt = validation.expiresAt
-					this.certError = ''
-				} else {
-					this.certSubject = ''
-					this.certSerialNumber = ''
-					this.certExpiresAt = 0
-					this.certError = validation.error
-				}
-			} catch (e) {
-				this.certSubject = ''
-				this.certSerialNumber = ''
-				this.certExpiresAt = 0
-				this.certError = 'cannot_read'
-			} finally {
-				this.saving = false
-			}
-		},
 		async saveConfigValue(key, value) {
 			try {
 				await axios.post(
@@ -342,8 +324,13 @@ export default {
 
 .certificate-error {
 	margin-top: 12px;
-	color: var(--color-error, #e9322d);
+	padding: 12px 16px;
+	background-color: var(--color-error, #e9322d);
+	background-color:  #e9322d;
+	color: #fff;
 	font-weight: bold;
+	border-radius: 8px;
+	display: inline-block;	
 }
 
 .dkmunorg-cert-info-box {
@@ -360,12 +347,81 @@ export default {
 	margin: 4px 0;
 }
 
-.certificate-status {
-	margin-top: 12px;
-	color: var(--color-text-maxcontrast);
-}
-
 .dkmunorg-button-row {
 	margin-top: 16px;
+}
+
+.dkmunorg-sync-log-table {
+	margin-top: 16px;
+	border-collapse: collapse;
+	width: 100%;
+	max-width: 600px;
+}
+
+.dkmunorg-sync-log-table caption {
+	text-align: left;
+	font-weight: bold;
+	margin-bottom: 8px;
+}
+
+.dkmunorg-sync-log-table th,
+.dkmunorg-sync-log-table td {
+	padding: 8px 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border, #ddd);
+}
+
+.dkmunorg-sync-log-table th {
+	font-weight: bold;
+	background-color: var(--color-background-dark, #f5f5f5);
+}
+
+.dkmunorg-sync-log-table tbody tr:hover {
+	background-color: var(--color-background-hover, #f0f0f0);
+}
+
+.dkmunorg-roles-table {
+	margin-top: 24px;
+	border-collapse: collapse;
+	width: 100%;
+}
+
+.dkmunorg-roles-table caption {
+	text-align: left;
+	font-weight: bold;
+	margin-bottom: 8px;
+}
+
+.dkmunorg-roles-table th,
+.dkmunorg-roles-table td {
+	padding: 8px 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border, #ddd);
+}
+
+.dkmunorg-roles-table th {
+	font-weight: bold;
+	background-color: var(--color-background-dark, #f5f5f5);
+}
+
+.dkmunorg-roles-table tbody tr:hover {
+	background-color: var(--color-background-hover, #f0f0f0);
+}
+
+.dkmunorg-prerequisite {
+	margin: 4px 0;
+	font-size: 14px;
+}
+
+.dkmunorg-check {
+	color: #2ea043;
+	font-weight: bold;
+	margin-right: 8px;
+}
+
+.dkmunorg-cross {
+	color: #e9322d;
+	font-weight: bold;
+	margin-right: 8px;
 }
 </style>
