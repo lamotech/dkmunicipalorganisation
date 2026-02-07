@@ -21,7 +21,7 @@ class AdminSection implements IIconSection {
 	}
 
 	public function getName(): string {
-		return 'DK Kommunal Adgang';
+		return $this->l->t('DK Municipal Access');
 	}
 
 	public function getPriority(): int {

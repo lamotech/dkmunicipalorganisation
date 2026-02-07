@@ -39,6 +39,7 @@ class AdminSettings implements ISettings {
 
 		$this->initialState->provideInitialState('syncLog', $this->orgSyncLogRepository->findLatest(5));
 
+		\OCP\Util::addTranslations(Application::APP_ID);
 		\OCP\Util::addScript(Application::APP_ID, 'dkmunicipalorganisation-admin-settings');
 		\OCP\Util::addStyle(Application::APP_ID, 'dkmunicipalorganisation-admin-settings');
 

@@ -1,48 +1,48 @@
 <template>
 	<div class="dkmunorg-admin-settings">
-		<NcSettingsSection :name="'Forudsætninger'">
+		<NcSettingsSection :name="t('dkmunicipalorganisation', 'Prerequisites')">
 			<div class="dkmunorg-prerequisite">
 				<div v-if="groupfoldersEnabled" class="dkmunorg-cert-info-box">
-					<div><span class="dkmunorg-check">&#10004;</span><strong>Teammapper er installeret</strong></div>
-				</div>			
+					<div><span class="dkmunorg-check">&#10004;</span><strong>{{ t('dkmunicipalorganisation', 'Group folders is installed') }}</strong></div>
+				</div>
 				<div v-else class="certificate-error">
-					<div><strong>Teammapper er ikke installeret - app'en er påkrævet</strong></div>
-				</div>			
+					<div><strong>{{ t('dkmunicipalorganisation', 'Group folders is not installed - the app is required') }}</strong></div>
+				</div>
 			</div>
 		</NcSettingsSection>
 
-		<NcSettingsSection :name="'Systemcertifikat'">
-			<p>Kopier dit systemcertifikat til serveren og kør denne kommando i roden af Nextcloud installationen for at registrere det:</p>
+		<NcSettingsSection :name="t('dkmunicipalorganisation', 'System certificate')">
+			<p>{{ t('dkmunicipalorganisation', 'Copy your system certificate to the server and run this command in the root of the Nextcloud installation to register it:') }}</p>
 			<br/>
 			<p><strong>php occ dkmunicipalorganisation:register-certificate</strong></p>
 			<br/>
 
 			<div v-if="certError === 'not_found'" class="certificate-error">
-				Certifikatet findes ikke på den angivne sti
+				{{ t('dkmunicipalorganisation', 'The certificate was not found at the specified path') }}
 			</div>
 			<div v-else-if="certError === 'cannot_read'" class="certificate-error">
-				Certifikatet kan ikke læses
+				{{ t('dkmunicipalorganisation', 'The certificate cannot be read') }}
 			</div>
 			<div v-else-if="certSubject" class="dkmunorg-cert-info-box">
-				<div><strong>Navn:</strong> {{ certSubject }}</div>
-				<div><strong>Serienummer:</strong> {{ certSerialNumber }}</div>
-				<div><strong>Udløber:</strong> {{ certExpiresFormatted }}</div>
+				<div><strong>{{ t('dkmunicipalorganisation', 'Name:') }}</strong> {{ certSubject }}</div>
+				<div><strong>{{ t('dkmunicipalorganisation', 'Serial number:') }}</strong> {{ certSerialNumber }}</div>
+				<div><strong>{{ t('dkmunicipalorganisation', 'Expires:') }}</strong> {{ certExpiresFormatted }}</div>
 			</div>
 		</NcSettingsSection>
 
-		<NcSettingsSection :name="'Organisation'">
-			<p>Indstillinger for organisationsintegration.</p>
+		<NcSettingsSection :name="t('dkmunicipalorganisation', 'Organisation')">
+			<p>{{ t('dkmunicipalorganisation', 'Settings for organisation integration.') }}</p>
 
 			<NcCheckboxRadioSwitch id="org-enable"
 				v-model="organisationEnable"
 				type="switch">
-				Aktiver
+				{{ t('dkmunicipalorganisation', 'Enable') }}
 			</NcCheckboxRadioSwitch>
 
 			<table class="dkmunorg-cert-table">
 				<tr>
 					<td class="dkmunorg-cert-label">
-						<label for="org-cvr">CVR nummer</label>
+						<label for="org-cvr">{{ t('dkmunicipalorganisation', 'CVR number') }}</label>
 					</td>
 					<td>
 						<input id="org-cvr"
@@ -54,7 +54,7 @@
 				</tr>
 				<tr>
 					<td class="dkmunorg-cert-label">
-						<label for="org-token-url">Token service url</label>
+						<label for="org-token-url">{{ t('dkmunicipalorganisation', 'Token service URL') }}</label>
 					</td>
 					<td>
 						<input id="org-token-url"
@@ -66,7 +66,7 @@
 				</tr>
 				<tr>
 					<td class="dkmunorg-cert-label">
-						<label for="org-entity-id">Entity id for organisation</label>
+						<label for="org-entity-id">{{ t('dkmunicipalorganisation', 'Entity ID for organisation') }}</label>
 					</td>
 					<td>
 						<input id="org-entity-id"
@@ -78,7 +78,7 @@
 				</tr>
 				<tr>
 					<td class="dkmunorg-cert-label">
-						<label for="org-endpoint">Endpoint for organisation service</label>
+						<label for="org-endpoint">{{ t('dkmunicipalorganisation', 'Endpoint for organisation service') }}</label>
 					</td>
 					<td>
 						<input id="org-endpoint"
@@ -92,29 +92,29 @@
 
 			<div class="dkmunorg-button-row">
 				<button class="primary" :disabled="syncing" @click="syncOrganisations">
-					{{ syncing ? 'Synkroniserer...' : 'Synkroniser organisationer nu' }}
+					{{ syncing ? t('dkmunicipalorganisation', 'Synchronizing...') : t('dkmunicipalorganisation', 'Synchronize organisations now') }}
 				</button>
 			</div>
 
 			<div v-if="syncResult" class="dkmunorg-cert-info-box">
-				<div><strong>Hentet:</strong> {{ syncResult.fetched }}</div>
-				<div><strong>Oprettet:</strong> {{ syncResult.created }}</div>
-				<div><strong>Opdateret:</strong> {{ syncResult.updated }}</div>
-				<div><strong>Deaktiveret:</strong> {{ syncResult.deactivated }}</div>
+				<div><strong>{{ t('dkmunicipalorganisation', 'Fetched:') }}</strong> {{ syncResult.fetched }}</div>
+				<div><strong>{{ t('dkmunicipalorganisation', 'Created:') }}</strong> {{ syncResult.created }}</div>
+				<div><strong>{{ t('dkmunicipalorganisation', 'Updated:') }}</strong> {{ syncResult.updated }}</div>
+				<div><strong>{{ t('dkmunicipalorganisation', 'Deactivated:') }}</strong> {{ syncResult.deactivated }}</div>
 			</div>
 			<div v-if="syncError" class="certificate-error">
 				{{ syncError }}
 			</div>
 
 			<table v-if="syncLog.length > 0" class="dkmunorg-sync-log-table">
-				<caption>Synkroniseringslog</caption>
+				<caption>{{ t('dkmunicipalorganisation', 'Synchronization log') }}</caption>
 				<thead>
 					<tr>
-						<th>Tidspunkt</th>
-						<th>Hentet</th>
-						<th>Oprettet</th>
-						<th>Opdateret</th>
-						<th>Deaktiveret</th>
+						<th>{{ t('dkmunicipalorganisation', 'Time') }}</th>
+						<th>{{ t('dkmunicipalorganisation', 'Fetched') }}</th>
+						<th>{{ t('dkmunicipalorganisation', 'Created') }}</th>
+						<th>{{ t('dkmunicipalorganisation', 'Updated') }}</th>
+						<th>{{ t('dkmunicipalorganisation', 'Deactivated') }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -129,19 +129,19 @@
 			</table>
 		</NcSettingsSection>
 
-		<NcSettingsSection :name="'Adgangsstyring'">
-			<p>Indstillinger for adgangsstyring.</p>
+		<NcSettingsSection :name="t('dkmunicipalorganisation', 'Access control')">
+			<p>{{ t('dkmunicipalorganisation', 'Settings for access control.') }}</p>
 
 			<NcCheckboxRadioSwitch id="ac-enable"
 				v-model="accessControlEnable"
 				type="switch">
-				Aktiver
+				{{ t('dkmunicipalorganisation', 'Enable') }}
 			</NcCheckboxRadioSwitch>
 
 			<table class="dkmunorg-cert-table">
 				<tr>
 					<td class="dkmunorg-cert-label">
-						<label for="ac-idp-metadata">Metadata til Context Handler</label>
+						<label for="ac-idp-metadata">{{ t('dkmunicipalorganisation', 'Metadata for Context Handler') }}</label>
 					</td>
 					<td>
 						<input id="ac-idp-metadata"
@@ -155,29 +155,29 @@
 
 			<div class="dkmunorg-button-row">
 				<button class="primary" @click="downloadMetadata">
-					Download metadata fil
+					{{ t('dkmunicipalorganisation', 'Download metadata file') }}
 				</button>
 			</div>
 
 			<table class="dkmunorg-roles-table">
-				<caption>Opret disse brugersystemroller i Fælleskommunalt Administrationsmodul</caption>
+				<caption>{{ t('dkmunicipalorganisation', 'Create these user system roles in the Joint Municipal Administration Module') }}</caption>
 				<thead>
 					<tr>
-						<th>Navn</th>
-						<th>EntityId</th>
-						<th>Dataafgrænsningstyper</th>
+						<th>{{ t('dkmunicipalorganisation', 'Name') }}</th>
+						<th>{{ t('dkmunicipalorganisation', 'EntityId') }}</th>
+						<th>{{ t('dkmunicipalorganisation', 'Data delimitation types') }}</th>
 					</tr>
 				</thead>
 				<tbody>
 					<tr>
-						<td>Bruger</td>
+						<td>{{ t('dkmunicipalorganisation', 'User') }}</td>
 						<td>http://{{ domain }}/roles/usersystemrole/user/1</td>
-						<td>Organisation</td>
+						<td>{{ t('dkmunicipalorganisation', 'Organisation') }}</td>
 					</tr>
 					<tr>
-						<td>System Administrator</td>
+						<td>{{ t('dkmunicipalorganisation', 'System Administrator') }}</td>
 						<td>http://{{ domain }}/roles/usersystemrole/systemadministrator/1</td>
-						<td>Ingen</td>
+						<td>{{ t('dkmunicipalorganisation', 'None') }}</td>
 					</tr>
 				</tbody>
 			</table>
@@ -188,6 +188,7 @@
 <script>
 import axios from '@nextcloud/axios'
 import { loadState } from '@nextcloud/initial-state'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
 import NcSettingsSection from '@nextcloud/vue/dist/Components/NcSettingsSection.js'
@@ -250,6 +251,7 @@ export default {
 		}
 	},
 	methods: {
+		t,
 		async saveConfigValue(key, value) {
 			try {
 				await axios.post(
@@ -273,7 +275,7 @@ export default {
 				)
 				this.syncResult = response.data
 			} catch (e) {
-				this.syncError = 'Synkronisering fejlede'
+				this.syncError = t('dkmunicipalorganisation', 'Synchronization failed')
 				console.error('Sync failed', e)
 			} finally {
 				this.syncing = false
