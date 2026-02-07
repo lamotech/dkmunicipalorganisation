@@ -4,11 +4,8 @@ declare(strict_types=1);
 namespace OCA\DkMunicipalOrganisation\Command;
 
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use DOMDocument;
-use DOMXPath;
 use OCA\DkMunicipalOrganisation\Service\OrgDirectoryClient;
 
 class FetchOrganisationsCommand extends Command {

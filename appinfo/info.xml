@@ -14,7 +14,6 @@
 	<bugs>https://lamotech.dk</bugs>
 	<dependencies>
 		<nextcloud min-version="32" max-version="33"/>
-		<library name="soap" min-version="8.1" max-version="8.2"/>
 	</dependencies>
 	<commands>
 		<command>OCA\DkMunicipalOrganisation\Command\SyncOrganisationsCommand</command>

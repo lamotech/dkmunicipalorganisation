@@ -6,19 +6,11 @@ namespace OCA\DkMunicipalOrganisation\Service;
 use OCA\DkMunicipalOrganisation\Db\CertificateRepository;
 use OCA\DkMunicipalOrganisation\Enum\CertificateType;
 use OneLogin\Saml2\Settings;
-use OneLogin\Saml2\IdPMetadataParser;
-use OneLogin\Saml2\Metadata;
-use OneLogin\Saml2\Constants;
-use OneLogin\Saml2\Error;
-use OneLogin\Saml2\Error\ValidationError;
-use OneLogin\Saml2\Error\MissingAttributeError;
-use OneLogin\Saml2\Error\SettingNotFound;
 use RobRichards\XMLSecLibs\XMLSecurityDSig;
 use RobRichards\XMLSecLibs\XMLSecurityKey;
 use OCP\IURLGenerator;
 use DOMDocument;
 use DOMXPath;
-use DOMNode;
 use DOMElement;
 
 class SamlMetadataService {

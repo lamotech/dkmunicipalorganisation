@@ -6,9 +6,7 @@ namespace OCA\DkMunicipalOrganisation\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\Response;
-use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\ICallbackResponse;
 use OCP\AppFramework\Http\IOutput;
 use OCP\IRequest;
@@ -25,7 +23,6 @@ use OCP\IUserSession;
 use OCP\Authentication\Token\IToken;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\User\Events\UserFirstTimeLoggedInEvent;
-use OCP\IUser;
 use OCP\IGroupManager;
 /**
  * These endpoints must be callable by the IdP, so they are public and no CSRF.

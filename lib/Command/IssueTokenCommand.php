@@ -9,9 +9,7 @@ use OCA\DkMunicipalOrganisation\Service\Certificate;
 use OCA\DkMunicipalOrganisation\Service\Configuration;
 use OCA\DkMunicipalOrganisation\Service\TraceLogger;
 use OCA\DkMunicipalOrganisation\Enum\CertificateType;
-use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\SAMLToken;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
