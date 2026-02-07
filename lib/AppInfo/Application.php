@@ -9,7 +9,9 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCA\DkMunicipalOrganisation\BackgroundJob\SyncOrganisationsJob;
 use OCA\DkMunicipalOrganisation\Service\Configuration;
+use OCP\BackgroundJob\IJobList;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\ISession;
@@ -32,6 +34,12 @@ class Application extends App implements IBootstrap {
 	}
 
 	public function boot(IBootContext $context): void {
+		// Ensure background job is registered
+		$jobList = $context->getServerContainer()->get(IJobList::class);
+		if (!$jobList->has(SyncOrganisationsJob::class, null)) {
+			$jobList->add(SyncOrganisationsJob::class);
+		}
+
 		try {
 			$context->injectFn(function (
 				IRequest $request,
