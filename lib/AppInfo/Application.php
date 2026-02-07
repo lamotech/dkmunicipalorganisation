@@ -11,6 +11,7 @@ use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCA\DkMunicipalOrganisation\BackgroundJob\SyncOrganisationsJob;
 use OCA\DkMunicipalOrganisation\Service\Configuration;
+use OCA\DkMunicipalOrganisation\Service\TraceLogger;
 use OCP\BackgroundJob\IJobList;
 use OCP\IConfig;
 use OCP\IRequest;
@@ -49,13 +50,12 @@ class Application extends App implements IBootstrap {
 				ISession $session,
 				LoggerInterface $logger,
 				Configuration $configuration,
+				TraceLogger $traceLogger,
 				bool $isCLI,
 			): void {
 				if ($isCLI) {
 					return;
 				}
-
-				$logFile = \OC::$SERVERROOT . '/data/saml_acs_debug.log';
 
 				// Only handle browser HTML GET requests (avoid breaking DAV/OCS clients)
 				if (strtoupper($request->getMethod()) !== 'GET') {
@@ -74,11 +74,9 @@ class Application extends App implements IBootstrap {
 				if ($path === '/logout') {
 					// Check if this user logged in via SAML
 					if ($session->exists('dkmo.saml_login')) {
-						file_put_contents($logFile, json_encode([
-							'timestamp' => date('Y-m-d H:i:s'),
-							'action' => 'saml_logout_redirect',
+						$traceLogger->trace('saml_logout_redirect', [
 							'userId' => $userSession->getUser() ? $userSession->getUser()->getUID() : null,
-						], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+						]);
 
 						$logger->debug('Redirecting SAML user to SAML logout', [
 							'app' => self::APP_ID,
@@ -126,13 +124,11 @@ class Application extends App implements IBootstrap {
 
 					if (!$cookiesAreValid && count($storedTokens) > 0) {
 						// Cookies exist but token is stale - clear them so user can do fresh SAML login
-						file_put_contents($logFile, json_encode([
-							'timestamp' => date('Y-m-d H:i:s'),
-							'action' => 'stale_cookies_detected',
+						$traceLogger->trace('stale_cookies_detected', [
 							'nc_username' => $ncUsername,
 							'tokenInCookie' => substr($ncToken, 0, 10) . '...',
 							'storedTokensCount' => count($storedTokens),
-						], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+						]);
 
 						// Clear the stale cookies
 						$webroot = \OC::$WEBROOT ?: '/';
@@ -146,9 +142,7 @@ class Application extends App implements IBootstrap {
 				}
 
 				// Debug logging for session state
-				file_put_contents($logFile, json_encode([
-					'timestamp' => date('Y-m-d H:i:s'),
-					'action' => 'boot_check',
+				$traceLogger->trace('boot_check', [
 					'path' => $path,
 					'isLoggedIn' => $userSession->isLoggedIn(),
 					'hasRememberCookies' => $hasRememberCookies,
@@ -157,7 +151,7 @@ class Application extends App implements IBootstrap {
 					'ncSessionId' => $session->getId(),
 					'hasSamlMarker' => $session->exists('dkmo.saml_login'),
 					'userId' => $userSession->getUser() ? $userSession->getUser()->getUID() : null,
-				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+				]);
 
 				// If user has VALID remember-me cookies, try to log them in with cookies
 				// and redirect to dashboard - don't just show the login page
@@ -168,11 +162,9 @@ class Application extends App implements IBootstrap {
 
 					// Check if another request is already processing this login
 					if ($cache->get($lockKey) !== null) {
-						file_put_contents($logFile, json_encode([
-							'timestamp' => date('Y-m-d H:i:s'),
-							'action' => 'cookie_login_locked_skip',
+						$traceLogger->trace('cookie_login_locked_skip', [
 							'nc_username' => $ncUsername,
-						], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+						]);
 						// Another request is handling login, just redirect to dashboard
 						$dashboardUrl = $urlGenerator->linkToRouteAbsolute('dashboard.dashboard.index');
 						header('Location: ' . $dashboardUrl, true, 302);
@@ -182,11 +174,9 @@ class Application extends App implements IBootstrap {
 					// Acquire lock (5 second TTL)
 					$cache->set($lockKey, time(), 5);
 
-					file_put_contents($logFile, json_encode([
-						'timestamp' => date('Y-m-d H:i:s'),
-						'action' => 'attempting_cookie_login',
+					$traceLogger->trace('attempting_cookie_login', [
 						'nc_username' => $ncUsername,
-					], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+					]);
 
 					// Try to login with the valid cookie
 					if ($userSession instanceof \OC\User\Session) {
@@ -200,11 +190,9 @@ class Application extends App implements IBootstrap {
 							// NOTE: loginWithCookie already creates a new remember-me token
 							// Do NOT call createRememberMeToken here - it would create duplicates
 
-							file_put_contents($logFile, json_encode([
-								'timestamp' => date('Y-m-d H:i:s'),
-								'action' => 'cookie_login_success',
+							$traceLogger->trace('cookie_login_success', [
 								'nc_username' => $ncUsername,
-							], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+							]);
 
 							// Release lock
 							$cache->remove($lockKey);
@@ -214,11 +202,9 @@ class Application extends App implements IBootstrap {
 							header('Location: ' . $dashboardUrl, true, 302);
 							exit();
 						} else {
-							file_put_contents($logFile, json_encode([
-								'timestamp' => date('Y-m-d H:i:s'),
-								'action' => 'cookie_login_failed',
+							$traceLogger->trace('cookie_login_failed', [
 								'nc_username' => $ncUsername,
-							], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+							]);
 
 							// Release lock
 							$cache->remove($lockKey);

@@ -7,6 +7,7 @@ use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\TokenIssuerREST;
 use OCA\DkMunicipalOrganisation\Db\CertificateRepository;
 use OCA\DkMunicipalOrganisation\Service\Certificate;
 use OCA\DkMunicipalOrganisation\Service\Configuration;
+use OCA\DkMunicipalOrganisation\Service\TraceLogger;
 use OCA\DkMunicipalOrganisation\Enum\CertificateType;
 use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\SAMLToken;
 use Symfony\Component\Console\Command\Command;
@@ -18,6 +19,7 @@ class IssueTokenCommand extends Command {
 	public function __construct(
 		private CertificateRepository $certificateRepository,
 		private Configuration $configuration,
+		private TraceLogger $traceLogger,
 	) {
 		parent::__construct();
 	}
@@ -38,7 +40,8 @@ class IssueTokenCommand extends Command {
 			$samlToken = TokenIssuerREST::issueToken(
 				$entityId,
 				$certificate,
-				$this->configuration
+				$this->configuration,
+				$this->traceLogger
 			);
 
 			$output->writeln('<info>Token issued successfully:</info>');

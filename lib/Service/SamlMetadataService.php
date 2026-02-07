@@ -240,11 +240,6 @@ class SamlMetadataService {
 
 		// Save XML without the XML declaration
 		$metadata = $doc->saveXML($doc->documentElement);
-		//file_put_contents('/var/www/html/apps-extra/dkmunicipalorganisation/sp-metadata.xml', $metadata);
-
-		//if (!empty($errors)) {
-		//	$metadata =  "Metadata validation errors:\n" . implode("\n", $errors) . "Metadata:\n" . $metadata;
-		//}
 
 		return $metadata;
 	}

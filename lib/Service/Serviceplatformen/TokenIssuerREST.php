@@ -4,6 +4,7 @@ namespace OCA\DkMunicipalOrganisation\Service\Serviceplatformen;
 
 use OCA\DkMunicipalOrganisation\Service\Certificate;
 use OCA\DkMunicipalOrganisation\Service\Configuration;
+use OCA\DkMunicipalOrganisation\Service\TraceLogger;
 use Exception;
 
 /**
@@ -29,6 +30,7 @@ class TokenIssuerREST
      * @param string $entityId The service entity ID (AppliesTo)
      * @param Certificate $certificate The client certificate
      * @param Configuration $configuration The configuration service
+     * @param TraceLogger $traceLogger The trace logger
      * @return SAMLToken The issued SAML token
      * @throws Exception
      */
@@ -36,6 +38,7 @@ class TokenIssuerREST
         string $entityId,
         Certificate $certificate,
         Configuration $configuration,
+        TraceLogger $traceLogger,
     ): SAMLToken {
         // Get configuration
         $cvr = $configuration->getConfigValue('cvr', '11111111');
@@ -52,7 +55,7 @@ class TokenIssuerREST
             $requestPayload = self::buildRequestPayload($entityId, $cvr, $certificate);
 
             // Send the REST request with client certificate authentication
-            $response = self::sendRestRequest($apiUrl, $requestPayload, $pemFiles);
+            $response = self::sendRestRequest($apiUrl, $requestPayload, $pemFiles, $traceLogger);
 
             // Return a SAMLToken instance
             return new SAMLToken($response);
@@ -91,16 +94,12 @@ class TokenIssuerREST
     /**
      * Send the REST request with client certificate authentication
      */
-    private static function sendRestRequest(string $url, array $payload, array $pemFiles): array
+    private static function sendRestRequest(string $url, array $payload, array $pemFiles, TraceLogger $traceLogger): array
     {
         $ch = curl_init($url);
 
         // Encode payload as JSON
         $jsonPayload = json_encode($payload, JSON_UNESCAPED_SLASHES);
-
-        // Enable verbose curl output for debugging
-        $verboseFile = sys_get_temp_dir() . '/curl_rest_verbose_' . date('Y-m-d_H-i-s') . '.log';
-        $verbose = fopen($verboseFile, 'w+');
 
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
@@ -114,8 +113,6 @@ class TokenIssuerREST
             CURLOPT_SSLKEYTYPE => 'PEM',
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2,
-            CURLOPT_VERBOSE => true,
-            CURLOPT_STDERR => $verbose,
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json',
                 'Accept: application/json',
@@ -123,28 +120,21 @@ class TokenIssuerREST
             ]
         ]);
 
-        // Debug: Save the request payload
-        $requestFile = sys_get_temp_dir() . '/rest_request_' . date('Y-m-d_H-i-s') . '.json';
-        file_put_contents($requestFile, $jsonPayload);
-        error_log("REST request saved to: " . $requestFile);
+        $traceLogger->trace('rest_request', [
+            'url' => $url,
+            'payload' => $payload,
+        ]);
 
         $response = curl_exec($ch);
         $curlError = curl_error($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        // Close and log verbose output
-        if ($verbose) {
-            fclose($verbose);
-            error_log("cURL verbose log saved to: " . $verboseFile);
-        }
-
-        // Debug: Save the response
-        if ($response) {
-            $responseFile = sys_get_temp_dir() . '/rest_response_' . date('Y-m-d_H-i-s') . '.json';
-            file_put_contents($responseFile, $response);
-            error_log("REST response saved to: " . $responseFile);
-        }
+        $traceLogger->trace('rest_response', [
+            'httpCode' => $httpCode,
+            'response' => $response ? substr($response, 0, 1000) : null,
+            'curlError' => $curlError ?: null,
+        ]);
 
         if ($response === false || $curlError) {
             throw new Exception("REST request failed: " . $curlError);
@@ -173,7 +163,7 @@ class TokenIssuerREST
     }
 
     /**
-     * Convert PKCS#12 certificate to PEM format
+     * Store certificate and key in temporary PEM files for cURL
      */
     private static function storeTempPemFiles(Certificate $certificate): array
     {
@@ -191,9 +181,6 @@ class TokenIssuerREST
         if (file_put_contents($keyPath, $certificate->getPrivateKey()) === false) {
             throw new Exception("Failed to write private key file");
         }
-
-        error_log("REST: Certificate written to: " . $certPath);
-        error_log("REST: Private key written to: " . $keyPath);
 
         return [
             'cert' => $certPath,

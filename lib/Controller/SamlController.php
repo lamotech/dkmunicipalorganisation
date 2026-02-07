@@ -17,6 +17,7 @@ use OCA\DkMunicipalOrganisation\Enum\CertificateType;
 use OCA\DkMunicipalOrganisation\Service\Certificate;
 use OCA\DkMunicipalOrganisation\Service\SamlService;
 use OCA\DkMunicipalOrganisation\Service\SamlMetadataService;
+use OCA\DkMunicipalOrganisation\Service\TraceLogger;
 use OCP\IURLGenerator;
 use OCP\ISession;
 use OCP\IUserManager;
@@ -46,6 +47,7 @@ class SamlController extends Controller {
 		private readonly IEventDispatcher $eventDispatcher,
 		private CertificateRepository $certificateRepository,
 		private IGroupManager $groupManager,
+		private TraceLogger $traceLogger,
 	) {
 		parent::__construct($appName, $request);
 	}
@@ -106,8 +108,6 @@ class SamlController extends Controller {
 	 * @NoCSRFRequired
 	 */
 	public function acs(): Response {
-		$logFile = \OC::$SERVERROOT . '/data/saml_acs_debug.log';
-
 		// Log the raw SAML token for debugging
 		$samlResponseB64 = $this->request->getParam('SAMLResponse', '');
 		$relayState = $this->request->getParam('RelayState', '');
@@ -121,11 +121,9 @@ class SamlController extends Controller {
 
 		// Check if this exact SAML response was already processed
 		if ($cache->get($cacheKey) !== null) {
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'duplicate_saml_response_blocked',
+			$this->traceLogger->trace('duplicate_saml_response_blocked', [
 				'responseHash' => substr($responseHash, 0, 16) . '...',
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			]);
 
 			// Redirect to dashboard - the previous request should have set up the session
 			return new RedirectResponse($this->urlGenerator->linkToRouteAbsolute('dashboard.dashboard.index'));
@@ -148,8 +146,6 @@ class SamlController extends Controller {
 		} catch (\Exception $e) {
 			$logData['DecryptionError'] = $e->getMessage();
 		}
-
-		//file_put_contents($logFile, json_encode($logData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n\n", FILE_APPEND);
 
 		// Parse the decrypted assertion directly (bypass OneLogin library which can't handle RSA-OAEP SHA256)
 		if (!isset($decryptedAssertion)) {
@@ -176,37 +172,31 @@ class SamlController extends Controller {
 		$userExists = ($user !== null);
 
 		// Log privilege check
-		file_put_contents($logFile, json_encode([
-			'timestamp' => date('Y-m-d H:i:s'),
-			'action' => 'privilege_check',
+		$this->traceLogger->trace('privilege_check', [
 			'userId' => $userId,
 			'userExists' => $userExists,
 			'isUser' => $privilege['isUser'],
 			'isAdministrator' => $privilege['isAdministrator'],
 			'grantedOrganisations' => $privilege['grantedOrganisations'],
-		], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+		]);
 
 		// Handle user access based on privilege
 		if ($userExists && !$privilege['isUser']) {
 			// User exists but no longer has access - deactivate and show no access page
 			$user->setEnabled(false);
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'user_deactivated',
+			$this->traceLogger->trace('user_deactivated', [
 				'userId' => $userId,
 				'reason' => 'isUser=false',
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			]);
 			return $this->showNoAccessPage();
 		}
 
 		if (!$userExists && !$privilege['isUser']) {
 			// User doesn't exist and has no access - show no access page
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'access_denied',
+			$this->traceLogger->trace('access_denied', [
 				'userId' => $userId,
 				'reason' => 'user does not exist and isUser=false',
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			]);
 			return $this->showNoAccessPage();
 		}
 
@@ -217,23 +207,19 @@ class SamlController extends Controller {
 			// User doesn't exist but has access - create the user
 			$user = $this->createNextcloudUser($userId, $displayName);
 			$isNewUser = true;
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'user_created',
+			$this->traceLogger->trace('user_created', [
 				'userId' => $userId,
 				'displayName' => $displayName,
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			]);
 		}
 
 		// At this point: user exists and isUser=true - continue login flow
 		// Re-enable user if they were previously disabled
 		if (!$user->isEnabled()) {
 			$user->setEnabled(true);
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'user_reactivated',
+			$this->traceLogger->trace('user_reactivated', [
 				'userId' => $userId,
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			]);
 		}
 
 		// Sync administrator group membership
@@ -241,18 +227,14 @@ class SamlController extends Controller {
 		if ($adminGroup !== null) {
 			if ($privilege['isAdministrator'] && !$adminGroup->inGroup($user)) {
 				$adminGroup->addUser($user);
-				file_put_contents($logFile, json_encode([
-					'timestamp' => date('Y-m-d H:i:s'),
-					'action' => 'admin_group_added',
+				$this->traceLogger->trace('admin_group_added', [
 					'userId' => $userId,
-				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+				]);
 			} elseif (!$privilege['isAdministrator'] && $adminGroup->inGroup($user)) {
 				$adminGroup->removeUser($user);
-				file_put_contents($logFile, json_encode([
-					'timestamp' => date('Y-m-d H:i:s'),
-					'action' => 'admin_group_removed',
+				$this->traceLogger->trace('admin_group_removed', [
 					'userId' => $userId,
-				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+				]);
 			}
 		}
 
@@ -264,12 +246,10 @@ class SamlController extends Controller {
 			$groupId = $group->getGID();
 			if (str_starts_with($groupId, 'org_') && !in_array($groupId, $grantedGroupIds)) {
 				$group->removeUser($user);
-				file_put_contents($logFile, json_encode([
-					'timestamp' => date('Y-m-d H:i:s'),
-					'action' => 'org_group_removed',
+				$this->traceLogger->trace('org_group_removed', [
 					'userId' => $userId,
 					'groupId' => $groupId,
-				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+				]);
 			}
 		}
 		// Add to granted org_ groups
@@ -280,23 +260,19 @@ class SamlController extends Controller {
 			}
 			if ($group !== null && !$group->inGroup($user)) {
 				$group->addUser($user);
-				file_put_contents($logFile, json_encode([
-					'timestamp' => date('Y-m-d H:i:s'),
-					'action' => 'org_group_added',
+				$this->traceLogger->trace('org_group_added', [
 					'userId' => $userId,
 					'groupId' => $groupId,
-				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+				]);
 			}
 		}
 
 		// Log before login attempt
-		file_put_contents($logFile, json_encode([
-			'timestamp' => date('Y-m-d H:i:s'),
-			'action' => 'login_attempt',
+		$this->traceLogger->trace('login_attempt', [
 			'userId' => $userId,
 			'userExists' => true,
 			'userEnabled' => $user->isEnabled(),
-		], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+		]);
 
 		// Initialize relay before try block
 		$savedRelay = '';
@@ -361,13 +337,11 @@ class SamlController extends Controller {
 				$ncConfig = \OC::$server->getConfig();
 				$storedTokens = $ncConfig->getUserKeys($userId, 'login_token');
 
-				file_put_contents($logFile, json_encode([
-					'timestamp' => date('Y-m-d H:i:s'),
-					'action' => 'remember_token_created',
+				$this->traceLogger->trace('remember_token_created', [
 					'userId' => $userId,
 					'sessionId' => session_id(),
 					'storedTokensCount' => count($storedTokens),
-				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+				]);
 			} else {
 				// Fallback if we can't access the concrete class
 				$currentSessionId = session_id();
@@ -384,13 +358,11 @@ class SamlController extends Controller {
 				setcookie('nc_token', $rememberToken, $rememberExpires, $webroot . '/', '', $secureCookie, true);
 				setcookie('nc_session_id', $currentSessionId, $rememberExpires, $webroot . '/', '', $secureCookie, true);
 
-				file_put_contents($logFile, json_encode([
-					'timestamp' => date('Y-m-d H:i:s'),
-					'action' => 'manual_cookies_set_fallback',
+				$this->traceLogger->trace('manual_cookies_set_fallback', [
 					'userId' => $userId,
 					'sessionId' => $currentSessionId,
 					'rememberToken' => $rememberToken,
-				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+				]);
 			}
 
 			// Store in Nextcloud session that this is a SAML login
@@ -402,11 +374,9 @@ class SamlController extends Controller {
 			// This ensures the filesystem is set up in the correct user context
 			if ($isNewUser) {
 				$this->initializeUserStorage($userId, $user);
-				file_put_contents($logFile, json_encode([
-					'timestamp' => date('Y-m-d H:i:s'),
-					'action' => 'storage_initialized_post_login',
+				$this->traceLogger->trace('storage_initialized_post_login', [
 					'userId' => $userId,
-				], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+				]);
 			}
 
 			// Get the relay state BEFORE we close the session
@@ -420,9 +390,7 @@ class SamlController extends Controller {
 			$finalSessionId = session_id();
 
 			// Log all relevant info
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'login_result',
+			$this->traceLogger->trace('login_result', [
 				'tokenCreated' => $tokenCreated,
 				'loginResult' => $loginResult,
 				'isLoggedIn' => $isLoggedIn,
@@ -436,15 +404,10 @@ class SamlController extends Controller {
 				'headers_sent' => headers_sent(),
 				'cookies_from_request' => array_keys($_COOKIE),
 				'rememberMeDays' => $rememberMeDuration / 86400,
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			]);
 
 		} catch (\Exception $e) {
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'login_error',
-				'error' => $e->getMessage(),
-				'trace' => $e->getTraceAsString(),
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			$this->traceLogger->error('login_error', $e);
 			throw $e;
 		}
 
@@ -456,12 +419,10 @@ class SamlController extends Controller {
 			$returnTo = $this->urlGenerator->linkToRouteAbsolute('dashboard.dashboard.index');
 		}
 
-		file_put_contents($logFile, json_encode([
-			'timestamp' => date('Y-m-d H:i:s'),
-			'action' => 'redirect',
+		$this->traceLogger->trace('redirect', [
 			'returnTo' => $returnTo,
 			'finalSessionId' => $finalSessionId ?? 'unknown',
-		], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+		]);
 
 		// setMagicInCookie() already set the remember-me cookies, just redirect
 		return new RedirectResponse($returnTo);
@@ -800,8 +761,6 @@ class SamlController extends Controller {
 	 * @param \OCP\IUser $user The user object
 	 */
 	private function initializeUserStorage(string $userId, \OCP\IUser $user): void {
-		$logFile = \OC::$SERVERROOT . '/data/saml_acs_debug.log';
-
 		try {
 			/*
 			// Tear down any existing filesystem mounts to ensure clean state
@@ -844,22 +803,16 @@ class SamlController extends Controller {
 			$user = $this->userManager->get($userId);
 			$this->eventDispatcher->dispatchTyped(new UserFirstTimeLoggedInEvent($user));
 
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'storage_init_success',
+			$this->traceLogger->trace('storage_init_success', [
 				'userId' => $userId,
 				'userFolderPath' => $userFolder->getPath(),
 				'scanned' => true,
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			]);
 		} catch (\Exception $e) {
 			// Log but don't fail - the folder may be created on first real access
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'storage_init_error',
+			$this->traceLogger->error('storage_init_error', $e, [
 				'userId' => $userId,
-				'error' => $e->getMessage(),
-				'trace' => $e->getTraceAsString(),
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			]);
 		}
 	}
 
@@ -898,8 +851,6 @@ class SamlController extends Controller {
 	 * @NoCSRFRequired
 	 */
 	public function logout(): Response {
-		$logFile = \OC::$SERVERROOT . '/data/saml_acs_debug.log';
-
 		try {
 			// Get return URL from params (where to go after logout completes)
 			$params = $this->request->getParams();
@@ -913,12 +864,10 @@ class SamlController extends Controller {
 			// Build the LogoutRequest URL
 			$logoutUrl = $this->samlService->buildLogoutRedirectUrl($returnTo);
 
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'sp_initiated_logout',
+			$this->traceLogger->trace('sp_initiated_logout', [
 				'logoutUrl' => $logoutUrl,
 				'returnTo' => $returnTo,
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			]);
 
 			// Log out from Nextcloud first
 			$this->userSession->logout();
@@ -927,11 +876,7 @@ class SamlController extends Controller {
 			return new RedirectResponse($logoutUrl);
 
 		} catch (\Exception $e) {
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'logout_error',
-				'error' => $e->getMessage(),
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			$this->traceLogger->error('logout_error', $e);
 
 			// If SAML logout fails, still log out locally and show logged out page
 			$this->userSession->logout();
@@ -967,27 +912,21 @@ class SamlController extends Controller {
 	 * Common SLS handler for both GET and POST
 	 */
 	private function handleSls(): Response {
-		$logFile = \OC::$SERVERROOT . '/data/saml_acs_debug.log';
-
 		$samlResponse = $this->request->getParam('SAMLResponse');
 		$samlRequest = $this->request->getParam('SAMLRequest');
 
-		file_put_contents($logFile, json_encode([
-			'timestamp' => date('Y-m-d H:i:s'),
-			'action' => 'sls_received',
+		$this->traceLogger->trace('sls_received', [
 			'hasSAMLResponse' => !empty($samlResponse),
 			'hasSAMLRequest' => !empty($samlRequest),
 			'method' => $this->request->getMethod(),
-		], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+		]);
 
 		try {
 			$result = $this->samlService->processSls($samlResponse, $samlRequest);
 
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'sls_processed',
+			$this->traceLogger->trace('sls_processed', [
 				'result' => $result,
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			]);
 
 			// Log out from Nextcloud
 			$this->userSession->logout();
@@ -1003,12 +942,7 @@ class SamlController extends Controller {
 			);
 
 		} catch (\Exception $e) {
-			file_put_contents($logFile, json_encode([
-				'timestamp' => date('Y-m-d H:i:s'),
-				'action' => 'sls_error',
-				'error' => $e->getMessage(),
-				'trace' => $e->getTraceAsString(),
-			], JSON_PRETTY_PRINT) . "\n\n", FILE_APPEND);
+			$this->traceLogger->error('sls_error', $e);
 
 			// Even on error, log out locally
 			$this->userSession->logout();

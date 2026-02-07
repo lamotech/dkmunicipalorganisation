@@ -11,7 +11,9 @@ use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\SAMLToken;
 use OCA\DkMunicipalOrganisation\Db\CertificateRepository;
 use OCA\DkMunicipalOrganisation\Service\Certificate;
 use OCA\DkMunicipalOrganisation\Service\Configuration;
-use OCA\DkMunicipalOrganisation\Enum\CertificateType;use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\OrganisationConfiguration;
+use OCA\DkMunicipalOrganisation\Service\TraceLogger;
+use OCA\DkMunicipalOrganisation\Enum\CertificateType;
+use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\OrganisationConfiguration;
 use OCA\DkMunicipalOrganisation\Service\Serviceplatformen\OrganisationWrapper;
 use DOMDocument;
 use DOMXPath;
@@ -21,7 +23,8 @@ class OrgDirectoryClient {
 		private IClientService $http,
 		private IConfig $config,
 		private CertificateRepository $certificateRepository,
-		private Configuration $configuration,		
+		private Configuration $configuration,
+		private TraceLogger $traceLogger,
 	) {}
 
 	/**
@@ -34,7 +37,8 @@ class OrgDirectoryClient {
 		$samlToken = TokenIssuerREST::issueToken(
 			$entityId,
 			$certificate,
-			$this->configuration
+			$this->configuration,
+			$this->traceLogger
 		);
 
 		// Setup Organisation Service
@@ -51,6 +55,13 @@ class OrgDirectoryClient {
 
 		while (true) {
 			$response = $organisationWrapper->fremsoeg(limit: $limit, offset: $offset);
+
+			$this->traceLogger->trace('organisation_fremsoeg_response', [
+				'limit' => $limit,
+				'offset' => $offset,
+				'responseLength' => strlen($response),
+				'response' => substr($response, 0, 2000),
+			]);
 
 			// Parse XML and extract EnhedNavn values
 			$doc = new DOMDocument();
