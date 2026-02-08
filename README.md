@@ -130,6 +130,11 @@ The Context Handler enriches the SAML assertion with privileges that define:
 - The user’s role in Nextcloud
 - Which department team folders the user can access
 
+You must specify the URL for the Context Handler metadata:
+- Test: https://n2adgangsstyring.eksterntest-stoettesystemerne.dk/runtime/saml2/metadata.idp?samlprofile=nemlogin3
+- Production: https://n2adgangsstyring.stoettesystemerne.dk/runtime/saml2/metadata.idp?samlprofile=nemlogin3
+
+
 #### User Roles
 Two roles are supported:
 
