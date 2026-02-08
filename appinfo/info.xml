@@ -5,7 +5,7 @@
 	<name>DK Municipal Organisation and Access Control</name>
 	<summary>Danish Municipal Organisation and Access Control Integration</summary>
 	<description>Integration to the Danish Inter-municipal infrastructure for organisation and access control</description>
-	<version>0.1.07</version>
+	<version>0.3.00</version>
 	<licence>agpl</licence>
 	<author mail="dev@lamotech.dk" homepage="https://lamotech.dk">Lamotech Solutions ApS</author>
 	<namespace>DkMunicipalOrganisation</namespace>
@@ -16,16 +16,13 @@
 		<nextcloud min-version="32" max-version="33"/>
 	</dependencies>
 	<commands>
-		<command>OCA\DkMunicipalOrganisation\Command\SyncOrganisationsCommand</command>
-		<command>OCA\DkMunicipalOrganisation\Command\CreateFolderCommand</command>
-		<command>OCA\DkMunicipalOrganisation\Command\RenameFolderCommand</command>
-		<command>OCA\DkMunicipalOrganisation\Command\SetFolderPermissionsCommand</command>
-		<command>OCA\DkMunicipalOrganisation\Command\ShowSyncLogCommand</command>
-		<command>OCA\DkMunicipalOrganisation\Command\ValidateOrganisationsCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\FetchOrganisationsCommand</command>
 		<command>OCA\DkMunicipalOrganisation\Command\GenerateSAMLMetadataCommand</command>
 		<command>OCA\DkMunicipalOrganisation\Command\IssueTokenCommand</command>
-		<command>OCA\DkMunicipalOrganisation\Command\FetchOrganisationsCommand</command>
 		<command>OCA\DkMunicipalOrganisation\Command\RegisterCertificateCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\ShowSyncLogCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\SyncOrganisationsCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\ValidateOrganisationsCommand</command>
 	</commands>
 	<settings>
 		<admin-section>OCA\DkMunicipalOrganisation\Settings\AdminSection</admin-section>
