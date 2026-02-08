@@ -42,7 +42,14 @@ OC.L10N.register(
 		"System Administrator": "System Administrator",
 		"None": "None",
 		"Synchronization failed": "Synchronization failed",
-		"DK Municipal Access": "DK Municipal Access"
+		"DK Municipal Access": "DK Municipal Access",
+		"You are now logged out": "You are now logged out",
+		"You have been successfully signed out of your account.": "You have been successfully signed out of your account.",
+		"Sign in": "Sign in",
+		"You do not have access": "You do not have access",
+		"Your account does not have permission to access this system.": "Your account does not have permission to access this system.",
+		"If you believe this is an error, please contact your administrator.": "If you believe this is an error, please contact your administrator.",
+		"Try again": "Try again"
 	},
 	"nplurals=2; plural=(n != 1);"
 );
