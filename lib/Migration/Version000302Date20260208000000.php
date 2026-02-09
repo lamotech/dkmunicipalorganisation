@@ -14,6 +14,11 @@ class Version000302Date20260208000000 extends SimpleMigrationStep {
 		private IDBConnection $db,
 	) {}
 
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// No schema changes needed, but this method must exist for postSchemaChange to execute
+		return null;
+	}
+
 	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$defaults = [
 			'organisation_enable' => '0',
