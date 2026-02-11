@@ -10,6 +10,9 @@ This app integrates Nextcloud with two core municipal services:
 To use this app, you must follow the **Connection Guide** for both *Usable Systems* and *User-facing Systems*, available here:  
 [Connection Guide](https://digitaliseringskataloget.dk/tilslutningsguide)
 
+Also, we provide a comprehensive  installation guide in Danish here:
+[Installation and Configuration Guide](https://lamotech.dk/nextcloud/dkmunicipalorganisation/Installation%20og%20konfiguration%20af%20DK%20Kommunal%20Adgang%20til%20Nextcloud.pdf)
+
 ---
 
 ## Requirements
