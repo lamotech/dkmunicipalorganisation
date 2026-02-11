@@ -107,6 +107,9 @@ php occ dkmunicipalorganisation:register-certificate
 
 
 ### Organisation Synchronisation
+
+![Organisation](readme/organisation.png)
+
 Enable the organisation synchronisation service and configure the following settings:
 
 | Setting | Description |
@@ -122,9 +125,11 @@ After saving the configuration, run the **initial synchronisation** by clicking:
 
 When enabled, synchronisation runs **once daily just after midnight**.
 
-![Organisation](readme/organisation.png)
 
 ### Access control
+
+![Access control](readme/accesscontrol.png)
+
 When Access Control is enabled, users must authenticate using a SAML login flow:
 
 Nextcloud → KOMBIT Context Handler → Customer Identity Provider (IdP)
@@ -156,5 +161,5 @@ It is still possible to log in using local Nextcloud users by visiting:
 By clicking “**Download metadata file**”, you can download the SAML metadata required for configuration of the **User-facing System** in the KOMBIT administration portal.
 
 
-![Access control](readme/accesscontrol.png)
+
 
