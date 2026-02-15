@@ -10,6 +10,9 @@ This app integrates Nextcloud with two core municipal services:
 To use this app, you must follow the **Connection Guide** for both *Usable Systems* and *User-facing Systems*, available here:  
 [Connection Guide](https://digitaliseringskataloget.dk/tilslutningsguide)
 
+Also, we provide a comprehensive  installation guide in Danish here:
+[Installation and Configuration Guide](https://lamotech.dk/nextcloud/dkmunicipalorganisation/Installation%20og%20konfiguration%20af%20DK%20Kommunal%20Adgang%20til%20Nextcloud.pdf)
+
 ---
 
 ## Requirements
@@ -104,6 +107,9 @@ php occ dkmunicipalorganisation:register-certificate
 
 
 ### Organisation Synchronisation
+
+![Organisation](readme/organisation.png)
+
 Enable the organisation synchronisation service and configure the following settings:
 
 | Setting | Description |
@@ -119,9 +125,11 @@ After saving the configuration, run the **initial synchronisation** by clicking:
 
 When enabled, synchronisation runs **once daily just after midnight**.
 
-![Organisation](readme/organisation.png)
 
 ### Access control
+
+![Access control](readme/accesscontrol.png)
+
 When Access Control is enabled, users must authenticate using a SAML login flow:
 
 Nextcloud → KOMBIT Context Handler → Customer Identity Provider (IdP)
@@ -153,5 +161,5 @@ It is still possible to log in using local Nextcloud users by visiting:
 By clicking “**Download metadata file**”, you can download the SAML metadata required for configuration of the **User-facing System** in the KOMBIT administration portal.
 
 
-![Access control](readme/accesscontrol.png)
+
 

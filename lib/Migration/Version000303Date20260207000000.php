@@ -5,10 +5,11 @@ namespace OCA\DkMunicipalOrganisation\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
-class Version000302Date20260207000000 extends SimpleMigrationStep {
+class Version000303Date20260207000000 extends SimpleMigrationStep {
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
@@ -51,7 +52,7 @@ class Version000302Date20260207000000 extends SimpleMigrationStep {
 			$table->addColumn('configvalue', 'text', ['notnull' => false]);
 
 			$table->setPrimaryKey(['configkey']);
-		}		
+		}
 		return $schema;
 	}
 }

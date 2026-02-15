@@ -25,6 +25,9 @@ class AdminSettings implements ISettings {
 	}
 
 	public function getForm(): TemplateResponse {
+		// Ensure default configuration values exist before loading the settings page
+		$this->configuration->ensureDefaultsExist();
+
 		$this->initialState->provideInitialState('prerequisites', [
 			'groupfolders' => $this->appManager->isEnabledForUser('groupfolders'),
 		]);

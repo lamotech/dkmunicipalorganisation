@@ -94,4 +94,31 @@ class Configuration {
 
 		return $exists;
 	}
+
+	/**
+	 * Ensure default configuration values exist in the database
+	 * This is called when the settings page is loaded
+	 */
+	public function ensureDefaultsExist(): void {
+		$defaults = [
+			'organisation_enable' => '0',
+			'cvr' => '11111111',
+			'token_issuer_base_url' => 'https://n2adgangsstyring.eksterntest-stoettesystemerne.dk/',
+			'token_issuer_endpoint' => '/runtime/api/rest/wstrust/v1/issue',
+			'entity_id_organisation' => 'http://stoettesystemerne.dk/service/organisation/3',
+			'endpoint_organisation' => 'https://organisation.eksterntest-stoettesystemerne.dk/organisation/organisationsystem/6/',
+			'access_control_enable' => '0',
+			'idp_metadata_url' => 'https://n2adgangsstyring.eksterntest-stoettesystemerne.dk/runtime/saml2/metadata.idp?samlprofile=nemlogin3',
+			'entity_id' => '/index.php/apps/dkmunicipalorganisation/saml/metadata',
+			'acs_url' => '/index.php/apps/dkmunicipalorganisation/saml/acs',
+			'sls_url' => '/index.php/apps/dkmunicipalorganisation/saml/sls',
+		];
+
+		foreach ($defaults as $key => $value) {
+			// Only insert if the key doesn't exist
+			if (!$this->configKeyExists($key)) {
+				$this->setConfigValue($key, $value);
+			}
+		}
+	}
 }
