@@ -23,6 +23,8 @@
 		<command>OCA\DkMunicipalOrganisation\Command\ShowSyncLogCommand</command>
 		<command>OCA\DkMunicipalOrganisation\Command\SyncOrganisationsCommand</command>
 		<command>OCA\DkMunicipalOrganisation\Command\ValidateOrganisationsCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\TraceEnableCommand</command>
+		<command>OCA\DkMunicipalOrganisation\Command\TraceDisableCommand</command>
 	</commands>
 	<settings>
 		<admin-section>OCA\DkMunicipalOrganisation\Settings\AdminSection</admin-section>
