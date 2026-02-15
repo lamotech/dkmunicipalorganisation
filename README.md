@@ -160,6 +160,49 @@ It is still possible to log in using local Nextcloud users by visiting:
 #### SAML Metadata
 By clicking “**Download metadata file**”, you can download the SAML metadata required for configuration of the **User-facing System** in the KOMBIT administration portal.
 
+---
+
+## Troubleshooting
+### Tracing
+You can enabling tracing with this command
+
+**php occ dkmunicipalorganisation:trace-enable**
+
+A trace file will be created in the data directory:
+
+&lt;datadir&gt;/dkmunicipalorganisation.log
+
+You will for example be able to see the user privilege from the SAML token.
+
+Disable tracing again with this command
+
+**php occ dkmunicipalorganisation:trace-disable**
+
+---
+
+### Other useful commands
+
+### FetchOrganisationsCommand
+
+**php occ dkmunicipalorganisation:fetch-orgs**
+
+Will fetch the list of organisations from the integration and print them in the command window. The database is not changed by this command but it is useful to test the integration.
+
+### ShowSyncLogCommand
+
+**php occ dkmunicipalorganisation:show-sync-log [limit]**
+
+Shows the latect entries from organisation sync log. You can specify a limit of how many entries you want to list. Default is 10.
+
+### ValidateOrganisationsCommand
+
+**php occ dkmunicipalorganisation:validate-org**
+
+Loops through the organisations and validate that team folders and access groups exists. Reports a lists of any mismatches.
+
+
+
+
 
 
 
