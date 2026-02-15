@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\DkMunicipalOrganisation\Service;
 
+use OCP\IConfig;
+
 /**
  * Centralized debug/trace logging for the DkMunicipalOrganisation app.
  *
@@ -17,6 +19,7 @@ class TraceLogger {
 
 	public function __construct(
 		private Configuration $configuration,
+		private IConfig $config,
 	) {}
 
 	/**
@@ -33,7 +36,8 @@ class TraceLogger {
 	 * Get the full path to the log file.
 	 */
 	private function getLogFilePath(): string {
-		return \OC::$SERVERROOT . '/data/' . self::LOG_FILENAME;
+		$dataDirectory = $this->config->getSystemValue('datadirectory', \OC::$SERVERROOT . '/data');
+		return $dataDirectory . '/' . self::LOG_FILENAME;
 	}
 
 	/**
