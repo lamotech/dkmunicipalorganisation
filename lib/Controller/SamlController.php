@@ -150,6 +150,7 @@ class SamlController extends Controller {
 		}
 
 		$principal = $this->parseDecryptedAssertion($decryptedAssertion);
+		$this->traceLogger->trace('principal_parsed', $principal);
 
 		// Check user privileges from the assertion
 		$privilege = $this->getUserPrivilege($principal);
