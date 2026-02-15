@@ -220,6 +220,15 @@ class SamlController extends Controller {
 			]);
 		}
 
+		// Update display name if changed
+		if ($user->getDisplayName() !== $displayName) {
+			$user->setDisplayName($displayName);
+			$this->traceLogger->trace('displayname_updated', [
+				'userId' => $userId,
+				'displayName' => $displayName,
+			]);
+		}
+
 		// Sync administrator group membership
 		$adminGroup = $this->groupManager->get('admin');
 		if ($adminGroup !== null) {
