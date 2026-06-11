@@ -289,9 +289,6 @@ class SamlController extends Controller {
 			$userSession = \OC::$server->getUserSession();
 			$secureRandom = \OC::$server->getSecureRandom();
 
-			// Generate a random token for this session (SAML doesn't use passwords)
-			$sessionToken = $secureRandom->generate(64);
-
 			// Store the old session ID for debugging
 			$oldSessionId = session_id();
 
@@ -301,7 +298,7 @@ class SamlController extends Controller {
 				$user,
 				[
 					'loginName' => $userId,
-					'password' => $sessionToken,
+					'password' => '',
 				]
 			);
 
@@ -322,16 +319,36 @@ class SamlController extends Controller {
 			$userSession->setUser($user);
 			\OC_User::setUserId($userId);
 
-			// NOW create the session token - with the NEW session ID after completeLogin
-			// Use IToken::REMEMBER to persist the session across browser restarts
+			// Create a passwordless session token (null password) so Nextcloud's 5-minute
+			// credential re-check (checkTokenCredentials) hits the PasswordlessTokenException
+			// path and skips checkPassword. A random password would cause checkPassword to
+			// fail every 5 minutes, logging the user out and clearing the nc_* cookies.
 			$tokenCreated = $userSession->createSessionToken(
 				$this->request,
 				$userId,
 				$userId,
-				$sessionToken,
-				IToken::REMEMBER  // This makes the session persistent like "Remember me"
+				null,            // passwordless — SAML has no NC password to store
+				IToken::REMEMBER // persist the session across browser restarts
 			);
 
+			// Mark the session token so Nextcloud's JS skips the password-confirmation
+			// prompt (the "sudo mode" dialog). SAML users have no NC password, so the
+			// prompt can never succeed. Setting SCOPE_SKIP_PASSWORD_VALIDATION=true
+			// makes JSConfigHelper set backendAllowsPasswordConfirmation=false, which
+			// hides the prompt entirely in personal settings and other sensitive pages.
+			try {
+				$tokenProvider = \OC::$server->get(\OC\Authentication\Token\IProvider::class);
+				$sessionToken = $tokenProvider->getToken(session_id());
+				$sessionToken->setScope([
+					IToken::SCOPE_SKIP_PASSWORD_VALIDATION => true,
+					IToken::SCOPE_FILESYSTEM               => true,
+				]);
+				$tokenProvider->updateToken($sessionToken);
+			} catch (\Exception $e) {
+				// Non-fatal: the prompt may still appear, but login is unaffected.
+				$this->traceLogger->trace('scope_skip_password_validation_failed', ['error' => $e->getMessage()]);
+			}
+						
 			$afterTokenSessionId = session_id();
 
 			// Set up "remember me" cookies for loginWithCookie() to work
