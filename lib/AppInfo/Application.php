@@ -13,6 +13,7 @@ use OCA\DkMunicipalOrganisation\BackgroundJob\SyncOrganisationsJob;
 use OCA\DkMunicipalOrganisation\Service\Configuration;
 use OCA\DkMunicipalOrganisation\Service\TraceLogger;
 use OCP\BackgroundJob\IJobList;
+use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\ISession;
@@ -51,6 +52,7 @@ class Application extends App implements IBootstrap {
 				LoggerInterface $logger,
 				Configuration $configuration,
 				TraceLogger $traceLogger,
+				ICacheFactory $cacheFactory,
 				bool $isCLI,
 			): void {
 				if ($isCLI) {
@@ -157,7 +159,7 @@ class Application extends App implements IBootstrap {
 				// and redirect to dashboard - don't just show the login page
 				if ($hasRememberCookies && $cookiesAreValid) {
 					// Use a lock to prevent parallel cookie login attempts from racing
-					$cache = \OC::$server->getMemCacheFactory()->createDistributed('dkmunicipalorganisation');
+					$cache = $cacheFactory->createDistributed('dkmunicipalorganisation');
 					$lockKey = 'cookie_login_lock_' . $ncUsername;
 
 					// Check if another request is already processing this login

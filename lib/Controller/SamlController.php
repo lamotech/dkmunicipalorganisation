@@ -24,6 +24,9 @@ use OCP\Authentication\Token\IToken;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\User\Events\UserFirstTimeLoggedInEvent;
 use OCP\IGroupManager;
+use OCP\ICacheFactory;
+use OCP\IConfig;
+use OCP\Security\ISecureRandom;
 /**
  * These endpoints must be callable by the IdP, so they are public and no CSRF.
  *
@@ -45,6 +48,9 @@ class SamlController extends Controller {
 		private CertificateRepository $certificateRepository,
 		private IGroupManager $groupManager,
 		private TraceLogger $traceLogger,
+		private ICacheFactory $cacheFactory,
+		private IConfig $config,
+		private ISecureRandom $secureRandom,
 	) {
 		parent::__construct($appName, $request);
 	}
@@ -114,7 +120,7 @@ class SamlController extends Controller {
 		// Use a hash of the SAML response as a one-time token
 		$responseHash = hash('sha256', $samlResponseB64);
 		$cacheKey = 'saml_processed_' . $responseHash;
-		$cache = \OC::$server->getMemCacheFactory()->createDistributed('dkmunicipalorganisation');
+		$cache = $this->cacheFactory->createDistributed('dkmunicipalorganisation');
 
 		// Check if this exact SAML response was already processed
 		if ($cache->get($cacheKey) !== null) {
@@ -286,8 +292,8 @@ class SamlController extends Controller {
 
 		try {
 			// Use Nextcloud's internal session manager for proper session persistence
-			$userSession = \OC::$server->getUserSession();
-			$secureRandom = \OC::$server->getSecureRandom();
+			$userSession = $this->userSession;
+			$secureRandom = $this->secureRandom;
 
 			// Store the old session ID for debugging
 			$oldSessionId = session_id();
@@ -306,9 +312,9 @@ class SamlController extends Controller {
 
 			// Prepare "remember me" cookies - these are what Nextcloud uses to persist login
 			// Get cookie lifetime from config (default 15 days like standard Nextcloud)
-			$rememberMeDuration = \OC::$server->getConfig()->getSystemValueInt('remember_login_cookie_lifetime', 60 * 60 * 24 * 15);
+			$rememberMeDuration = $this->config->getSystemValueInt('remember_login_cookie_lifetime', 60 * 60 * 24 * 15);
 			$cookieExpires = time() + $rememberMeDuration;
-			$secureCookie = \OC::$server->getRequest()->getServerProtocol() === 'https';
+			$secureCookie = $this->request->getServerProtocol() === 'https';
 			$cookiePath = \OC::$WEBROOT ? \OC::$WEBROOT . '/' : '/';
 
 			// Store session info for the callback response
@@ -358,7 +364,7 @@ class SamlController extends Controller {
 				$userSession->createRememberMeToken($user);
 
 				// Verify storage
-				$ncConfig = \OC::$server->getConfig();
+				$ncConfig = $this->config;
 				$storedTokens = $ncConfig->getUserKeys($userId, 'login_token');
 
 				$this->traceLogger->trace('remember_token_created', [
@@ -369,13 +375,13 @@ class SamlController extends Controller {
 			} else {
 				// Fallback if we can't access the concrete class
 				$currentSessionId = session_id();
-				$secureCookie = \OC::$server->getRequest()->getServerProtocol() === 'https';
+				$secureCookie = $this->request->getServerProtocol() === 'https';
 				$rememberExpires = time() + $rememberMeDuration;
 				$webroot = \OC::$WEBROOT ?: '';
 
 				// Generate and store token manually
 				$rememberToken = $secureRandom->generate(32);
-				$ncConfig = \OC::$server->getConfig();
+				$ncConfig = $this->config;
 				$ncConfig->setUserValue($userId, 'login_token', $rememberToken, (string)time());
 
 				setcookie('nc_username', $userId, $rememberExpires, $webroot . '/', '', $secureCookie, true);
@@ -758,7 +764,7 @@ class SamlController extends Controller {
 	 */
 	private function createNextcloudUser(string $userId, string $displayName): \OCP\IUser {
 		// Generate a random password (SAML users don't use passwords)
-		$secureRandom = \OC::$server->getSecureRandom();
+		$secureRandom = $this->secureRandom;
 		$password = $secureRandom->generate(32);
 
 		// Create the user
