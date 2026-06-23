@@ -51,6 +51,9 @@ class OrganisationSyncService {
 					if (!(bool)$row['active']) {
 						$this->repo->setActive($uuid, true);
 					}
+					// Make sure group display name is in sync (in case it was changed outside of this service)
+					$group = $this->groups->get($row['nc_group_id']);
+					$group?->setDisplayName($name);					
 				}
 			}
 
@@ -76,7 +79,8 @@ class OrganisationSyncService {
 	public function createOrganisation(string $uuid, string $name, string $parentUuid): int {
 		$groupId = 'org_' . strtolower($uuid);
 		if ($this->groups->get($groupId) === null) {
-			$this->groups->createGroup($groupId);
+			$group = $this->groups->createGroup($groupId);
+			$group->setDisplayName($name);
 		}		
 		$permissions = Constants::PERMISSION_READ | Constants::PERMISSION_UPDATE | Constants::PERMISSION_CREATE | Constants::PERMISSION_SHARE | Constants::PERMISSION_DELETE;
 
@@ -93,5 +97,10 @@ class OrganisationSyncService {
 	public function updateOrganisation(string $uuid, string $name, int $folderId, string $parentUuid): void {
 		$this->folderManager->renameFolder($folderId, $name);
 		$this->repo->updateOrganisation($uuid, $name, $parentUuid);
+		$org = $this->repo->find($uuid);
+		if ($org !== null) {
+			$group = $this->groups->get($org['nc_group_id']);
+			$group?->setDisplayName($name);
+		}
 	}
 }
