@@ -21,7 +21,7 @@ Users with the User role are assigned the User role with the organization as the
 
 The team folders are available in the Files app, where documents can be created, edited, and shared.]]>
 	</description>
-	<version>1.2.0</version>
+	<version>1.2.1</version>
 	<licence>agpl</licence>
 	<author mail="dev@lamotech.dk" homepage="https://lamotech.dk">Lamotech Solutions ApS</author>
     <documentation>
