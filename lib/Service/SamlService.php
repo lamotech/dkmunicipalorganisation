@@ -19,13 +19,22 @@ class SamlService {
 		private Configuration $configuration,
 	) {}
 
+	/**
+	 * The SP entity ID from configuration (entity_id), as an absolute URL.
+	 * Must be used everywhere the SP identifies itself (metadata, AuthnRequest,
+	 * LogoutRequest, LogoutResponse, audience validation).
+	 */
+	private function getSpEntityId(): string {
+		$entityIdPath = $this->configuration->getConfigValue('entity_id', '/index.php/apps/dkmunicipalorganisation/saml/metadata');
+		return $this->urlGenerator->getAbsoluteURL($entityIdPath);
+	}
+
 	private function buildSettings(): array {
 		// Your SP endpoints from configuration (converted to absolute URLs)
-		$entityIdPath = $this->configuration->getConfigValue('entity_id', '/index.php/apps/dkmunicipalorganisation/saml/metadata');
 		$acsUrlPath = $this->configuration->getConfigValue('acs_url', '/index.php/apps/dkmunicipalorganisation/saml/acs');
 		$slsUrlPath = $this->configuration->getConfigValue('sls_url', '/index.php/apps/dkmunicipalorganisation/saml/sls');
 
-		$entityId = $this->urlGenerator->getAbsoluteURL($entityIdPath);
+		$entityId = $this->getSpEntityId();
 		$acsUrl = $this->urlGenerator->getAbsoluteURL($acsUrlPath);
 		$slsUrl = $this->urlGenerator->getAbsoluteURL($slsUrlPath);
 
@@ -112,7 +121,7 @@ class SamlService {
 
 	public function getLoginRedirectUrl(string $returnTo): string {
 		$settings = new Settings($this->buildSettings(), true);
-		$entityId = $this->urlGenerator->getAbsoluteURL('/index.php/apps/dkmunicipalorganisation/saml/metadata');
+		$entityId = $this->getSpEntityId();
 
 		// Store return URL for after ACS
 		$this->session->set('dkmo.relay', $returnTo);
@@ -291,7 +300,7 @@ XML;
 	 */
 	public function buildLogoutRedirectUrl(?string $returnTo = null): string {
 		$settings = new Settings($this->buildSettings(), true);
-		$entityId = $this->urlGenerator->getAbsoluteURL('/index.php/apps/dkmunicipalorganisation/saml/metadata');
+		$entityId = $this->getSpEntityId();
 
 		// Get session data stored during login
 		$nameId = $this->session->get('dkmo.nameid');
@@ -516,7 +525,7 @@ XML;
 	 */
 	private function buildLogoutResponse(string $inResponseTo): string {
 		$settings = new Settings($this->buildSettings(), true);
-		$entityId = $this->urlGenerator->getAbsoluteURL('/index.php/apps/dkmunicipalorganisation/saml/metadata');
+		$entityId = $this->getSpEntityId();
 
 		// Get IdP SLO URL
 		$idpData = $settings->getIdPData();
