@@ -6,7 +6,7 @@ OC.L10N.register(
 		"Group folders is not installed - the app is required": "Teammapper er ikke installeret - app'en er påkrævet",
 		"System certificate": "Systemcertifikat",
 		"Copy your system certificate to the server and run this command in the root of the Nextcloud installation to register it:": "Kopier dit systemcertifikat til serveren og kør denne kommando i roden af Nextcloud installationen for at registrere det:",
-		"The certificate was not found at the specified path": "Certifikatet findes ikke på den angivne sti",
+		"No certificate has been registered": "Der er ikke registreret et certifikat",
 		"The certificate cannot be read": "Certifikatet kan ikke læses",
 		"Name:": "Navn:",
 		"Serial number:": "Serienummer:",
@@ -49,7 +49,8 @@ OC.L10N.register(
 		"You do not have access": "Du har ikke adgang",
 		"Your account does not have permission to access this system.": "Din konto har ikke tilladelse til at tilgå dette system.",
 		"If you believe this is an error, please contact your administrator.": "Hvis du mener, dette er en fejl, kontakt venligst din administrator.",
-		"Try again": "Prøv igen"
+		"Try again": "Prøv igen",
+		"The certificate is read from a file outside Nextcloud. Register it again to store it securely in Nextcloud.": "Certifikatet læses fra en fil uden for Nextcloud. Registrér det igen for at gemme det sikkert i Nextcloud."
 	},
 	"nplurals=2; plural=(n != 1);"
 );

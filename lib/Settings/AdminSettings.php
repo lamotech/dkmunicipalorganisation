@@ -6,6 +6,7 @@ namespace OCA\DkMunicipalOrganisation\Settings;
 
 use OCA\DkMunicipalOrganisation\AppInfo\Application;
 use OCA\DkMunicipalOrganisation\Db\CertificateRepository;
+use OCA\DkMunicipalOrganisation\Enum\CertificateType;
 use OCA\DkMunicipalOrganisation\Db\OrgSyncLogRepository;
 use OCA\DkMunicipalOrganisation\Service\Configuration;
 use OCP\App\IAppManager;
@@ -34,10 +35,9 @@ class AdminSettings implements ISettings {
 
 		$this->initialState->provideInitialState('config', $this->configuration->getAllConfigValues());
 
-		$certificate = $this->certificateRepository->find('Primary');
+		// Never expose the certificate password or file location to the browser.
 		$this->initialState->provideInitialState('certificate', [
-			'filepath' => $certificate['filepath'] ?? '',
-			'password' => $certificate['password'] ?? '',
+			'configured' => $this->certificateRepository->exists(CertificateType::Primary->value),
 		]);
 
 		$this->initialState->provideInitialState('syncLog', $this->orgSyncLogRepository->findLatest(5));
