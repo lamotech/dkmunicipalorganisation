@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace OCA\DkMunicipalOrganisation\Controller;
 
 use OCA\DkMunicipalOrganisation\Db\CertificateRepository;
+use OCA\DkMunicipalOrganisation\Enum\CertificateType;
+use OCA\DkMunicipalOrganisation\Service\Certificate;
 use OCA\DkMunicipalOrganisation\Service\Configuration;
 use OCA\DkMunicipalOrganisation\Service\OrganisationSyncService;
 use OCP\AppFramework\Controller;
@@ -23,71 +25,29 @@ class SettingsController extends Controller {
 		parent::__construct($appName, $request);
 	}
 
-	public function saveCertificate(string $filepath, ?string $password): JSONResponse {
-		$filepath = trim($filepath);
-
-		if ($filepath === '') {
-			return new JSONResponse(['status' => 'error', 'message' => 'Filepath is required'], 400);
+	/**
+	 * Validates the registered primary certificate. Takes no input: the file and
+	 * password are read server-side and never sent to or from the browser.
+	 * Certificates are registered with occ dkmunicipalorganisation:register-certificate.
+	 */
+	public function validateCertificate(): JSONResponse {
+		try {
+			$record = $this->certificateRepository->find(CertificateType::Primary->value);
+			if ($record === null) {
+				return new JSONResponse(['valid' => false, 'error' => 'not_configured']);
+			}
+			$certificate = new Certificate(CertificateType::Primary, $this->certificateRepository);
+		} catch (\Throwable $e) {
+			return new JSONResponse(['valid' => false, 'error' => 'cannot_read']);
 		}
-
-		// Save to database
-		$existing = $this->certificateRepository->find('Primary');
-		if ($existing !== null) {
-			$this->certificateRepository->update('Primary', $filepath, $password);
-		} else {
-			$this->certificateRepository->insert('Primary', $filepath, $password);
-		}
-
-		// Validate the certificate
-		$validation = $this->validateCertificate($filepath, $password);
 
 		return new JSONResponse([
-			'status' => 'ok',
-			'validation' => $validation,
-		]);
-	}
-
-	public function validateCertificate(string $filepath, ?string $password): array {
-		$filepath = trim($filepath);
-
-		if ($filepath === '') {
-			return ['valid' => false, 'error' => ''];
-		}
-
-		if (!file_exists($filepath)) {
-			return ['valid' => false, 'error' => 'not_found'];
-		}
-
-		$certContent = file_get_contents($filepath);
-		if ($certContent === false) {
-			return ['valid' => false, 'error' => 'cannot_read'];
-		}
-
-		$pkcs12 = [];
-		if (!openssl_pkcs12_read($certContent, $pkcs12, $password ?? '')) {
-			return ['valid' => false, 'error' => 'cannot_read'];
-		}
-
-		$certResource = openssl_x509_read($pkcs12['cert']);
-		if ($certResource === false) {
-			return ['valid' => false, 'error' => 'cannot_read'];
-		}
-
-		$certInfo = openssl_x509_parse($certResource);
-		if ($certInfo === false) {
-			return ['valid' => false, 'error' => 'cannot_read'];
-		}
-
-		$subject = $certInfo['subject']['CN'] ?? $certInfo['name'] ?? '';
-		$serialNumber = $certInfo['serialNumberHex'] ?? $certInfo['serialNumber'] ?? '';
-		$expiresAt = $certInfo['validTo_time_t'] ?? 0;
-
-		return [
 			'valid' => true,
-			'subject' => $subject,
-			'serialNumber' => $serialNumber,
-			'expiresAt' => $expiresAt,
-		];
+			'subject' => $certificate->getSubject(),
+			'serialNumber' => $certificate->getSerialNumber(),
+			'expiresAt' => $certificate->getExpiresAt()->getTimestamp(),
+			'legacyStorage' => ($record['storage'] ?? '') !== CertificateRepository::STORAGE_APPDATA,
+		]);
 	}
 
 	public function saveConfig(string $key, ?string $value): JSONResponse {

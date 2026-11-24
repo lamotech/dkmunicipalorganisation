@@ -12,6 +12,7 @@ class Certificate {
 	private string $publicKey;
 	private string $privateKey;
 	private string $subject;
+	private string $serialNumber;
 	private \DateTimeImmutable $expiresAt;
 
 	public function __construct(
@@ -28,19 +29,10 @@ class Certificate {
 			throw new Exception("Certificate not found: Primary certificate must be configured");
 		}
 
-		$this->loadCertificate($record['filepath'], $record['password']);
+		$this->loadCertificate($repository->readContent($record), $record['password']);
 	}
 
-	private function loadCertificate(string $filepath, ?string $password): void {
-		if (!file_exists($filepath)) {
-			throw new Exception("Certificate file not found: {$filepath}");
-		}
-
-		$certContent = file_get_contents($filepath);
-		if ($certContent === false) {
-			throw new Exception("Failed to read certificate file: {$filepath}");
-		}
-
+	private function loadCertificate(string $certContent, ?string $password): void {
 		$pkcs12 = [];
 		if (!openssl_pkcs12_read($certContent, $pkcs12, $password ?? '')) {
 			throw new Exception("Failed to parse PKCS#12 certificate: " . openssl_error_string());
@@ -60,6 +52,7 @@ class Certificate {
 		}
 
 		$this->subject = $certInfo['subject']['CN'] ?? $certInfo['name'] ?? '';
+		$this->serialNumber = (string)($certInfo['serialNumberHex'] ?? $certInfo['serialNumber'] ?? '');
 		$this->expiresAt = (new \DateTimeImmutable())->setTimestamp($certInfo['validTo_time_t']);
 	}
 
@@ -81,6 +74,10 @@ class Certificate {
 
 	public function getSubject(): string {
 		return $this->subject;
+	}
+
+	public function getSerialNumber(): string {
+		return $this->serialNumber;
 	}
 
 	public function getExpiresAt(): \DateTimeImmutable {

@@ -6,7 +6,7 @@ OC.L10N.register(
 		"Group folders is not installed - the app is required": "Group folders is not installed - the app is required",
 		"System certificate": "System certificate",
 		"Copy your system certificate to the server and run this command in the root of the Nextcloud installation to register it:": "Copy your system certificate to the server and run this command in the root of the Nextcloud installation to register it:",
-		"The certificate was not found at the specified path": "The certificate was not found at the specified path",
+		"No certificate has been registered": "No certificate has been registered",
 		"The certificate cannot be read": "The certificate cannot be read",
 		"Name:": "Name:",
 		"Serial number:": "Serial number:",

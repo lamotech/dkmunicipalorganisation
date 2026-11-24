@@ -92,15 +92,33 @@ If it is missing, you must install and enable it before continuing.
 
 Register the system certificate acquired from **MitID Business**.
 
-1. Copy the `.p12` certificate file to the server
+1. Copy the `.p12` certificate file to the server and restrict access to it, so only the web server user can read it:
+
+```bash
+chown www-data:www-data /path/to/certificate.p12
+chmod 600 /path/to/certificate.p12
+```
+
 2. From the Nextcloud installation directory, run:
 
 ```bash
-php occ dkmunicipalorganisation:register-certificate
+sudo -u www-data php occ dkmunicipalorganisation:register-certificate
 ```
 3. Provide:
 - Path to the certificate file
 - Certificate password
+
+4. Delete the original `.p12` file. The command offers to do this for you.
+
+**How the certificate is stored**
+
+- The certificate file is copied into the app's own data folder in the Nextcloud data directory (`appdata_<instanceid>/dkmunicipalorganisation/certificates/`). After registration, the app does not use the original file.
+- The certificate password is stored **encrypted** in the database using Nextcloud's built-in encryption (`OCP\Security\ICrypto`). The key is derived from `secret` in `config/config.php`.
+- The password and file location are never sent to the browser.
+
+Because the password can be decrypted with `secret` from `config.php`, protect `config.php`, the data directory and your backups of them accordingly. If `secret` is ever changed, register the certificate again.
+
+When upgrading from version 1.2.2 or earlier, existing passwords are encrypted automatically and the certificate file is copied into the app data folder. You can then delete the original file. If you suspect that a database backup containing the plaintext password has been exposed, renew the system certificate in MitID Business.
 
 
 ![System Certificate](readme/cert.png)

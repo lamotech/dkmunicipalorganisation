@@ -17,8 +17,8 @@
 			<p><strong>php occ dkmunicipalorganisation:register-certificate</strong></p>
 			<br/>
 
-			<div v-if="certError === 'not_found'" class="certificate-error">
-				{{ t('dkmunicipalorganisation', 'The certificate was not found at the specified path') }}
+			<div v-if="certError === 'not_configured'" class="certificate-error">
+				{{ t('dkmunicipalorganisation', 'No certificate has been registered') }}
 			</div>
 			<div v-else-if="certError === 'cannot_read'" class="certificate-error">
 				{{ t('dkmunicipalorganisation', 'The certificate cannot be read') }}
@@ -27,6 +27,9 @@
 				<div><strong>{{ t('dkmunicipalorganisation', 'Name:') }}</strong> {{ certSubject }}</div>
 				<div><strong>{{ t('dkmunicipalorganisation', 'Serial number:') }}</strong> {{ certSerialNumber }}</div>
 				<div><strong>{{ t('dkmunicipalorganisation', 'Expires:') }}</strong> {{ certExpiresFormatted }}</div>
+			</div>
+			<div v-if="certLegacyStorage" class="certificate-error">
+				{{ t('dkmunicipalorganisation', 'The certificate is read from a file outside Nextcloud. Register it again to store it securely in Nextcloud.') }}
 			</div>
 		</NcSettingsSection>
 
@@ -212,15 +215,15 @@ export default {
 		},
 	},
 	data() {
-		const certificate = loadState('dkmunicipalorganisation', 'certificate', { filepath: '', password: '' })
+		const certificate = loadState('dkmunicipalorganisation', 'certificate', { configured: false })
 		const config = loadState('dkmunicipalorganisation', 'config', {})
 		const syncLog = loadState('dkmunicipalorganisation', 'syncLog', [])
 		const prerequisites = loadState('dkmunicipalorganisation', 'prerequisites', {})
 		return {
 			groupfoldersEnabled: prerequisites.groupfolders || false,
 			syncLog,
-			filepath: certificate.filepath,
-			password: certificate.password,
+			certConfigured: certificate.configured,
+			certLegacyStorage: false,
 			certSubject: '',
 			certSerialNumber: '',
 			certExpiresAt: 0,
@@ -246,8 +249,10 @@ export default {
 		},
 	},
 	mounted() {
-		if (this.filepath && this.password) {
+		if (this.certConfigured) {
 			this.validateCertificate()
+		} else {
+			this.certError = 'not_configured'
 		}
 	},
 	methods: {
@@ -286,19 +291,17 @@ export default {
 			this.certSerialNumber = ''
 			this.certExpiresAt = 0
 			this.certError = ''
+			this.certLegacyStorage = false
 
 			try {
 				const response = await axios.post(
 					generateUrl('/apps/dkmunicipalorganisation/settings/certificate/validate'),
-					{
-						filepath: this.filepath,
-						password: this.password,
-					},
 				)
 				if (response.data.valid) {
 					this.certSubject = response.data.subject
 					this.certSerialNumber = response.data.serialNumber
 					this.certExpiresAt = response.data.expiresAt
+					this.certLegacyStorage = response.data.legacyStorage === true
 				} else {
 					this.certError = response.data.error
 				}
